@@ -1,43 +1,27 @@
-/*
-Copyright 2020 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package cmd
 
 import (
 	"context"
 	"fmt"
-	"os"
-	"path"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"time"
-
 	"github.com/adrg/xdg"
 	"github.com/blang/semver/v4"
 	"github.com/google/go-github/v53/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
-	"sigs.k8s.io/yaml"
-
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 	"sigs.k8s.io/cluster-api/internal/goproxy"
 	"sigs.k8s.io/cluster-api/version"
+	"sigs.k8s.io/yaml"
+	"strings"
+	"time"
 )
+
+// ****************************************************** CONSTS *******************************************************
 
 var (
 	// gitVersionRegEx matches git versions of style 0.3.7-45-c1aeccb679cd56
@@ -45,56 +29,14 @@ var (
 	gitVersionRegEx = regexp.MustCompile(`(.*)-(\d+)-([0-9,a-f]{14})`)
 )
 
+// ****************************************************** OBJECTS ******************************************************
+
+// ______________________________________________________________________________________________________ versionChecker
 type versionChecker struct {
 	versionFilePath string
 	cliVersion      func() version.Info
 	githubClient    *github.Client
 	goproxyClient   *goproxy.Client
-}
-
-// newVersionChecker returns a versionChecker. Its behavior has been inspired
-// by https://github.com/cli/cli.
-func newVersionChecker(ctx context.Context, vc config.VariablesClient) (*versionChecker, error) {
-	var githubClient *github.Client
-	token, err := vc.Get("GITHUB_TOKEN")
-	if err == nil {
-		ts := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: token},
-		)
-		tc := oauth2.NewClient(ctx, ts)
-		githubClient = github.NewClient(tc)
-	} else {
-		githubClient = github.NewClient(nil)
-	}
-
-	var goproxyClient *goproxy.Client
-	if scheme, host, err := goproxy.GetSchemeAndHost(os.Getenv("GOPROXY")); err == nil && scheme != "" && host != "" {
-		goproxyClient = goproxy.NewClient(scheme, host)
-	}
-
-	configDirectory, err := xdg.ConfigFile(config.ConfigFolderXDG)
-	if err != nil {
-		return nil, err
-	}
-
-	return &versionChecker{
-		versionFilePath: filepath.Join(configDirectory, "version.yaml"),
-		cliVersion:      version.Get,
-		githubClient:    githubClient,
-		goproxyClient:   goproxyClient,
-	}, nil
-}
-
-// ReleaseInfo stores information about the release.
-type ReleaseInfo struct {
-	Version string
-	URL     string
-}
-
-// VersionState stores the release info and the last time it was updated.
-type VersionState struct {
-	LastCheck     time.Time
-	LatestRelease ReleaseInfo
 }
 
 // Check returns a message if the current clusterctl version is less than the
@@ -231,15 +173,55 @@ func (v *versionChecker) gitHubGetLatest(ctx context.Context) (*ReleaseInfo, err
 	}, nil
 }
 
-func writeStateFile(path string, vs *VersionState) error {
-	vsb, err := yaml.Marshal(vs)
+// _________________________________________________________________________________________________________ ReleaseInfo
+
+// ReleaseInfo stores information about the release.
+type ReleaseInfo struct {
+	Version string
+	URL     string
+}
+
+// ________________________________________________________________________________________________________ VersionState
+
+// VersionState stores the release info and the last time it was updated.
+type VersionState struct {
+	LastCheck     time.Time
+	LatestRelease ReleaseInfo
+}
+
+// ************************************************** PRIVATE METHODS **************************************************
+
+// newVersionChecker returns a versionChecker. Its behavior has been inspired
+// by https://github.com/cli/cli.
+func newVersionChecker(ctx context.Context, vc config.VariablesClient) (*versionChecker, error) {
+	var githubClient *github.Client
+	token, err := vc.Get("GITHUB_TOKEN")
+	if err == nil {
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		githubClient = github.NewClient(tc)
+	} else {
+		githubClient = github.NewClient(nil)
+	}
+
+	var goproxyClient *goproxy.Client
+	if scheme, host, err := goproxy.GetSchemeAndHost(os.Getenv("GOPROXY")); err == nil && scheme != "" && host != "" {
+		goproxyClient = goproxy.NewClient(scheme, host)
+	}
+
+	configDirectory, err := xdg.ConfigFile(config.ConfigFolderXDG)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-		return err
-	}
-	return os.WriteFile(path, vsb, 0600)
+
+	return &versionChecker{
+		versionFilePath: filepath.Join(configDirectory, "version.yaml"),
+		cliVersion:      version.Get,
+		githubClient:    githubClient,
+		goproxyClient:   goproxyClient,
+	}, nil
 }
 
 func readStateFile(filepath string) (*VersionState, error) {
@@ -264,4 +246,15 @@ func readStateFile(filepath string) (*VersionState, error) {
 	}
 
 	return vs, nil
+}
+
+func writeStateFile(path string, vs *VersionState) error {
+	vsb, err := yaml.Marshal(vs)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+		return err
+	}
+	return os.WriteFile(path, vsb, 0600)
 }

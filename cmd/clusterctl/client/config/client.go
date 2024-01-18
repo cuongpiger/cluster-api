@@ -1,19 +1,3 @@
-/*
-Copyright 2019 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package config
 
 import (
@@ -22,64 +6,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Client is used to interact with the clusterctl configurations.
-// Clusterctl v2 handles the following configurations:
-// 1. The cert manager configuration (URL of the repository)
-// 2. The configuration of the providers (name, type and URL of the provider repository)
-// 3. Variables used when installing providers/creating clusters. Variables can be read from the environment or from the config file
-// 4. The configuration about image overrides.
-type Client interface {
-	// CertManager provide access to the cert-manager configurations.
-	CertManager() CertManagerClient
-
-	// Providers provide access to provider configurations.
-	Providers() ProvidersClient
-
-	// Variables provide access to environment variables and/or variables defined in the clusterctl configuration file.
-	Variables() VariablesClient
-
-	// ImageMeta provide access to image meta configurations.
-	ImageMeta() ImageMetaClient
-}
-
-// configClient implements Client.
-type configClient struct {
-	reader Reader
-}
-
-// ensure configClient implements Client.
-var _ Client = &configClient{}
-
-func (c *configClient) CertManager() CertManagerClient {
-	return newCertManagerClient(c.reader)
-}
-
-func (c *configClient) Providers() ProvidersClient {
-	return newProvidersClient(c.reader)
-}
-
-func (c *configClient) Variables() VariablesClient {
-	return newVariablesClient(c.reader)
-}
-
-func (c *configClient) ImageMeta() ImageMetaClient {
-	return newImageMetaClient(c.reader)
-}
-
-// Option is a configuration option supplied to New.
-type Option func(*configClient)
-
-// InjectReader allows to override the default configuration reader used by clusterctl.
-func InjectReader(reader Reader) Option {
-	return func(c *configClient) {
-		c.reader = reader
-	}
-}
+// *************************************************** PUBLIC METHODS **************************************************
 
 // New returns a Client for interacting with the clusterctl configuration.
 func New(ctx context.Context, path string, options ...Option) (Client, error) {
 	return newConfigClient(ctx, path, options...)
 }
+
+// ************************************************** PRIVATE METHODS **************************************************
 
 func newConfigClient(ctx context.Context, path string, options ...Option) (*configClient, error) {
 	client := &configClient{}
@@ -116,4 +50,48 @@ type Reader interface {
 
 	// UnmarshalKey reads a configuration value and unmarshals it into the provided value object.
 	UnmarshalKey(key string, value interface{}) error
+}
+
+// Option is a configuration option supplied to New.
+type Option func(*configClient)
+
+// configClient implements Client.
+type configClient struct {
+	reader Reader
+}
+
+// Client is used to interact with the clusterctl configurations.
+// Clusterctl v2 handles the following configurations:
+// 1. The cert manager configuration (URL of the repository)
+// 2. The configuration of the providers (name, type and URL of the provider repository)
+// 3. Variables used when installing providers/creating clusters. Variables can be read from the environment or from the config file
+// 4. The configuration about image overrides.
+type Client interface {
+	// CertManager provide access to the cert-manager configurations.
+	CertManager() CertManagerClient
+
+	// Providers provide access to provider configurations.
+	Providers() ProvidersClient
+
+	// Variables provide access to environment variables and/or variables defined in the clusterctl configuration file.
+	Variables() VariablesClient
+
+	// ImageMeta provide access to image meta configurations.
+	ImageMeta() ImageMetaClient
+}
+
+func (c *configClient) CertManager() CertManagerClient {
+	return newCertManagerClient(c.reader)
+}
+
+func (c *configClient) Providers() ProvidersClient {
+	return newProvidersClient(c.reader)
+}
+
+func (c *configClient) Variables() VariablesClient {
+	return newVariablesClient(c.reader)
+}
+
+func (c *configClient) ImageMeta() ImageMetaClient {
+	return newImageMetaClient(c.reader)
 }

@@ -1,0 +1,236 @@
+package config
+
+import (
+	"github.com/drone/envsubst/v2"
+	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"net/url"
+	"os"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
+	"sort"
+	"strings"
+)
+
+// ****************************************************** CONSTS *******************************************************
+
+// Other.
+const (
+	// ProvidersConfigKey is a constant for finding provider configurations with the ProvidersClient.
+	ProvidersConfigKey = "providers"
+)
+
+// core providers.
+const (
+	// ClusterAPIProviderName is the name for the core provider.
+	ClusterAPIProviderName = "cluster-api"
+)
+
+// Infra providers.
+const (
+	OpenStackProviderName = "openstack"
+	VngCloudProviderName  = "vngcloud"
+)
+
+// Bootstrap providers.
+const (
+	KubeadmBootstrapProviderName = "kubeadm"
+)
+
+// ControlPlane providers.
+const (
+	KamajiControlPlaneProviderName = "kamaji"
+)
+
+// Add-on providers.
+const (
+	HelmAddonProviderName = "helm"
+)
+
+// **************************************************** INTERFACES *****************************************************
+
+// ProvidersClient has methods to work with provider configurations.
+type ProvidersClient interface {
+	// List returns all the provider configurations, including provider configurations hard-coded in clusterctl
+	// and user-defined provider configurations read from the clusterctl configuration file.
+	// In case of conflict, user-defined provider override the hard-coded configurations.
+	List() ([]Provider, error)
+
+	// Get returns the configuration for the provider with a given name/type.
+	// In case the name/type does not correspond to any existing provider, an error is returned.
+	Get(name string, providerType clusterctlv1.ProviderType) (Provider, error)
+}
+
+// ****************************************************** OBJECTS ******************************************************
+
+// ______________________________________________________________________________________________________ providerClient
+
+// providersClient implements ProvidersClient.
+type providersClient struct {
+	reader Reader
+}
+
+func (p *providersClient) List() ([]Provider, error) {
+	// Creates a maps with all the defaults provider configurations
+	providers := p.defaults()
+
+	// Gets user defined provider configurations, validate them, and merges with
+	// hard-coded configurations handling conflicts (user defined take precedence on hard-coded)
+
+	userDefinedProviders := []configProvider{}
+	if err := p.reader.UnmarshalKey(ProvidersConfigKey, &userDefinedProviders); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal providers from the clusterctl configuration file")
+	}
+
+	for _, u := range userDefinedProviders {
+		var err error
+		u.URL, err = envsubst.Eval(u.URL, os.Getenv)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to evaluate url: %q", u.URL)
+		}
+
+		provider := NewProvider(u.Name, u.URL, u.Type)
+		if err := validateProvider(provider); err != nil {
+			return nil, errors.Wrapf(err, "error validating configuration for the %s with name %s. Please fix the providers value in clusterctl configuration file", provider.Type(), provider.Name())
+		}
+
+		override := false
+		for i := range providers {
+			if providers[i].SameAs(provider) {
+				providers[i] = provider
+				override = true
+			}
+		}
+
+		if !override {
+			providers = append(providers, provider)
+		}
+	}
+
+	// ensure provider configurations are consistently sorted
+	sort.Slice(providers, func(i, j int) bool {
+		return providers[i].Less(providers[j])
+	})
+
+	return providers, nil
+}
+
+func (p *providersClient) Get(name string, providerType clusterctlv1.ProviderType) (Provider, error) {
+	l, err := p.List()
+	if err != nil {
+		return nil, err
+	}
+
+	provider := NewProvider(name, "", providerType) // NB. Having the url empty is fine because the url is not considered by SameAs.
+	for _, r := range l {
+		if r.SameAs(provider) {
+			return r, nil
+		}
+	}
+
+	return nil, errors.Errorf("failed to get configuration for the %s with name %s. Please check the provider name and/or add configuration for new providers using the .clusterctl config file", providerType, name)
+}
+
+func (p *providersClient) defaults() []Provider {
+	// clusterctl includes a predefined list of Cluster API providers sponsored by SIG-cluster-lifecycle to provide users the simplest
+	// out-of-box experience. This is an opt-in feature; other providers can be added by using the clusterctl configuration file.
+
+	// if you are a developer of a SIG-cluster-lifecycle project, you can send a PR to extend the following list.
+
+	defaults := []Provider{
+		// cluster API core provider
+		&provider{
+			name:         ClusterAPIProviderName,
+			url:          "https://github.com/kubernetes-sigs/cluster-api/releases/latest/core-components.yaml",
+			providerType: clusterctlv1.CoreProviderType,
+		},
+
+		// Infrastructure providers
+		&provider{
+			name:         OpenStackProviderName,
+			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-openstack/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+
+		// Bootstrap providers
+		&provider{
+			name:         KubeadmBootstrapProviderName,
+			url:          "https://github.com/kubernetes-sigs/cluster-api/releases/latest/bootstrap-components.yaml",
+			providerType: clusterctlv1.BootstrapProviderType,
+		},
+
+		// ControlPlane providers
+		&provider{
+			name:         KamajiControlPlaneProviderName,
+			url:          "https://github.com/clastix/cluster-api-control-plane-provider-kamaji/releases/latest/control-plane-components.yaml",
+			providerType: clusterctlv1.ControlPlaneProviderType,
+		},
+
+		// Add-on providers
+		&provider{
+			name:         HelmAddonProviderName,
+			url:          "https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/latest/addon-components.yaml",
+			providerType: clusterctlv1.AddonProviderType,
+		},
+	}
+
+	return defaults
+}
+
+// ______________________________________________________________________________________________________ configProvider
+
+// configProvider mirrors config.Provider interface and allows serialization of the corresponding info.
+type configProvider struct {
+	Name string                    `json:"name,omitempty"`
+	URL  string                    `json:"url,omitempty"`
+	Type clusterctlv1.ProviderType `json:"type,omitempty"`
+}
+
+// ************************************************** PRIVATE METHODS **************************************************
+
+func newProvidersClient(reader Reader) *providersClient {
+	return &providersClient{
+		reader: reader,
+	}
+}
+
+func validateProvider(r Provider) error {
+	if r.Name() == "" {
+		return errors.New("name value cannot be empty")
+	}
+
+	if (r.Name() == ClusterAPIProviderName) != (r.Type() == clusterctlv1.CoreProviderType) {
+		return errors.Errorf("name %s must be used with the %s type (name: %s, type: %s)", ClusterAPIProviderName, clusterctlv1.CoreProviderType, r.Name(), r.Type())
+	}
+
+	if errMsgs := validation.IsDNS1123Subdomain(r.Name()); len(errMsgs) != 0 {
+		return errors.Errorf("invalid provider name: %s", strings.Join(errMsgs, "; "))
+	}
+	if r.URL() == "" {
+		return errors.New("provider URL value cannot be empty")
+	}
+
+	if _, err := url.Parse(r.URL()); err != nil {
+		return errors.Wrap(err, "error parsing provider URL")
+	}
+
+	switch r.Type() {
+	case clusterctlv1.CoreProviderType,
+		clusterctlv1.BootstrapProviderType,
+		clusterctlv1.InfrastructureProviderType,
+		clusterctlv1.ControlPlaneProviderType,
+		clusterctlv1.IPAMProviderType,
+		clusterctlv1.RuntimeExtensionProviderType,
+		clusterctlv1.AddonProviderType:
+		break
+	default:
+		return errors.Errorf("invalid provider type. Allowed values are [%s, %s, %s, %s, %s, %s, %s]",
+			clusterctlv1.CoreProviderType,
+			clusterctlv1.BootstrapProviderType,
+			clusterctlv1.InfrastructureProviderType,
+			clusterctlv1.ControlPlaneProviderType,
+			clusterctlv1.IPAMProviderType,
+			clusterctlv1.RuntimeExtensionProviderType,
+			clusterctlv1.AddonProviderType)
+	}
+	return nil
+}

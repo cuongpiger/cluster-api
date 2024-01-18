@@ -1,28 +1,13 @@
-/*
-Copyright 2021 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package config
 
 import (
-	"os"
-	"time"
-
 	"github.com/drone/envsubst/v2"
 	"github.com/pkg/errors"
+	"os"
+	"time"
 )
+
+// ****************************************************** CONSTS *******************************************************
 
 const (
 	// CertManagerConfigKey defines the name of the top level config key for cert-manager configuration.
@@ -46,25 +31,15 @@ type CertManagerClient interface {
 	Get() (CertManager, error)
 }
 
-// certManagerClient implements CertManagerClient.
-type certManagerClient struct {
-	reader Reader
-}
-
-// ensure certManagerClient implements CertManagerClient.
-var _ CertManagerClient = &certManagerClient{}
-
 func newCertManagerClient(reader Reader) *certManagerClient {
 	return &certManagerClient{
 		reader: reader,
 	}
 }
 
-// configCertManager mirrors config.CertManager interface and allows serialization of the corresponding info.
-type configCertManager struct {
-	URL     string `json:"url,omitempty"`
-	Version string `json:"version,omitempty"`
-	Timeout string `json:"timeout,omitempty"`
+// certManagerClient implements CertManagerClient.
+type certManagerClient struct {
+	reader Reader
 }
 
 func (p *certManagerClient) Get() (CertManager, error) {
@@ -93,4 +68,13 @@ func (p *certManagerClient) Get() (CertManager, error) {
 	}
 
 	return NewCertManager(url, version, timeout), nil
+}
+
+// ___________________________________________________________________________________________________ configCertManager
+
+// configCertManager mirrors config.CertManager interface and allows serialization of the corresponding info.
+type configCertManager struct {
+	URL     string `json:"url,omitempty"`
+	Version string `json:"version,omitempty"`
+	Timeout string `json:"timeout,omitempty"`
 }

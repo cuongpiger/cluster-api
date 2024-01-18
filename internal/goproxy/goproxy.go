@@ -1,25 +1,12 @@
-/*
-Copyright 2022 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package goproxy
 
 import (
 	"context"
 	"fmt"
+	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
 	"io"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"net/url"
 	"path"
@@ -27,11 +14,9 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
+
+// ****************************************************** CONSTS *******************************************************
 
 const (
 	defaultGoProxyHost = "proxy.golang.org"
@@ -42,18 +27,14 @@ var (
 	retryableOperationTimeout  = 1 * time.Minute
 )
 
+// ****************************************************** OBJECTS ******************************************************
+
+// ______________________________________________________________________________________________________________ Client
+
 // Client is a client to query versions from a goproxy instance.
 type Client struct {
 	scheme string
 	host   string
-}
-
-// NewClient returns a new goproxyClient instance.
-func NewClient(scheme, host string) *Client {
-	return &Client{
-		scheme: scheme,
-		host:   host,
-	}
 }
 
 // GetVersions returns the a sorted list of semantical versions which exist for a go module.
@@ -142,6 +123,8 @@ func (g *Client) GetVersions(ctx context.Context, gomodulePath string) (semver.V
 	return parsedVersions, nil
 }
 
+// ************************************************** PUBLIC METHODS ***************************************************
+
 // GetSchemeAndHost detects and returns the scheme and host for goproxy requests.
 // It returns empty strings if goproxy is disabled via `off` or `direct` values.
 func GetSchemeAndHost(goproxy string) (string, string, error) {
@@ -189,4 +172,12 @@ func GetSchemeAndHost(goproxy string) (string, string, error) {
 	}
 
 	return goproxyScheme, goproxyHost, nil
+}
+
+// NewClient returns a new goproxyClient instance.
+func NewClient(scheme, host string) *Client {
+	return &Client{
+		scheme: scheme,
+		host:   host,
+	}
 }
