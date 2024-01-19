@@ -30,6 +30,13 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ensure clusterClient implements Client.
+var _ Client = &clusterClient{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                     INTERFACES                                                     //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -91,6 +98,9 @@ type RepositoryClientFactory func(ctx context.Context, provider config.Provider,
 // PollImmediateWaiter tries a condition func until it returns true, an error, or the timeout is reached.
 type PollImmediateWaiter func(ctx context.Context, interval, timeout time.Duration, condition wait.ConditionWithContextFunc) error
 
+// Option is a configuration option supplied to New.
+type Option func(*clusterClient)
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                      STRUCTS                                                       //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,6 +116,8 @@ type Kubeconfig struct {
 	Context string
 }
 
+// ************************************************************************************************ struct.clusterClient
+
 // clusterClient implements Client.
 type clusterClient struct {
 	configClient            config.Client
@@ -115,9 +127,6 @@ type clusterClient struct {
 	pollImmediateWaiter     PollImmediateWaiter
 	processor               yaml.Processor
 }
-
-// ensure clusterClient implements Client.
-var _ Client = &clusterClient{}
 
 func (c *clusterClient) Kubeconfig() Kubeconfig {
 	return c.kubeconfig
@@ -163,8 +172,9 @@ func (c *clusterClient) Topology() TopologyClient {
 	return newTopologyClient(c.proxy, c.ProviderInventory())
 }
 
-// Option is a configuration option supplied to New.
-type Option func(*clusterClient)
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InjectProxy allows to override the default proxy used by clusterctl.
 func InjectProxy(proxy Proxy) Option {
@@ -203,6 +213,10 @@ func InjectYamlProcessor(p yaml.Processor) Option {
 func New(kubeconfig Kubeconfig, configClient config.Client, options ...Option) Client {
 	return newClusterClient(kubeconfig, configClient, options...)
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func newClusterClient(kubeconfig Kubeconfig, configClient config.Client, options ...Option) *clusterClient {
 	client := &clusterClient{

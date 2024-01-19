@@ -6,8 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="f44e5d1b-4145-4f30-8a8b-4d0f7370d863" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/clusterctl/client/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/clusterctl/client/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/clusterctl/client/init.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/clusterctl/client/init.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,6 +90,21 @@
           <url>file://$PROJECT_DIR$/cmd/clusterctl/client/init.go</url>
           <line>122</line>
           <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/clusterctl/client/init.go</url>
+          <line>132</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/clusterctl/client/cluster/client.go</url>
+          <line>202</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/clusterctl/client/cluster/client.go</url>
+          <line>207</line>
+          <option name="timeStamp" value="5" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
