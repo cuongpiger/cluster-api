@@ -198,8 +198,8 @@ func (c *clusterctlClient) Init(ctx context.Context, options InitOptions) ([]Com
 
 	// Components is an alias for repository.Components; this makes the conversion from the two types
 	aliasComponents := make([]Components, len(components))
-	for i, components := range components {
-		aliasComponents[i] = components
+	for i, component := range components {
+		aliasComponents[i] = component
 	}
 	return aliasComponents, nil
 }
