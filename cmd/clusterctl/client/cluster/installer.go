@@ -44,6 +44,16 @@ import (
 	"sigs.k8s.io/cluster-api/util/contract"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+var _ ProviderInstaller = &providerInstaller{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // ProviderInstaller defines methods for enforcing consistency rules for provider installation.
 type ProviderInstaller interface {
 	// Add adds a provider to the install queue.
@@ -66,6 +76,10 @@ type ProviderInstaller interface {
 	Images() []string
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // InstallOptions defines the options used to configure installation.
 type InstallOptions struct {
 	WaitProviders       bool
@@ -81,8 +95,6 @@ type providerInstaller struct {
 	providerInventory       InventoryClient
 	installQueue            []repository.Components
 }
-
-var _ ProviderInstaller = &providerInstaller{}
 
 func (i *providerInstaller) Add(components repository.Components) {
 	i.installQueue = append(i.installQueue, components)
@@ -104,72 +116,6 @@ func (i *providerInstaller) Install(ctx context.Context, opts InstallOptions) ([
 	}
 
 	return ret, waitForProvidersReady(ctx, opts, i.installQueue, i.proxy)
-}
-
-func installComponentsAndUpdateInventory(ctx context.Context, components repository.Components, providerComponents ComponentsClient, providerInventory InventoryClient) error {
-	log := logf.Log
-	log.Info("Installing", "Provider", components.ManifestLabel(), "Version", components.Version(), "TargetNamespace", components.TargetNamespace())
-
-	inventoryObject := components.InventoryObject()
-
-	log.V(1).Info("Creating objects", "Provider", components.ManifestLabel(), "Version", components.Version(), "TargetNamespace", components.TargetNamespace())
-	if err := providerComponents.Create(ctx, components.Objs()); err != nil {
-		return err
-	}
-
-	log.V(1).Info("Creating inventory entry", "Provider", components.ManifestLabel(), "Version", components.Version(), "TargetNamespace", components.TargetNamespace())
-	return providerInventory.Create(ctx, inventoryObject)
-}
-
-// waitForProvidersReady waits till the installed components are ready.
-func waitForProvidersReady(ctx context.Context, opts InstallOptions, installQueue []repository.Components, proxy Proxy) error {
-	// If we dont have to wait for providers to be installed
-	// return early.
-	if !opts.WaitProviders {
-		return nil
-	}
-
-	log := logf.Log
-	log.Info("Waiting for providers to be available...")
-
-	return waitManagerDeploymentsReady(ctx, opts, installQueue, proxy)
-}
-
-// waitManagerDeploymentsReady waits till the installed manager deployments are ready.
-func waitManagerDeploymentsReady(ctx context.Context, opts InstallOptions, installQueue []repository.Components, proxy Proxy) error {
-	for _, components := range installQueue {
-		for _, obj := range components.Objs() {
-			if util.IsDeploymentWithManager(obj) {
-				if err := waitDeploymentReady(ctx, obj, opts.WaitProviderTimeout, proxy); err != nil {
-					return errors.Wrapf(err, "deployment %q is not ready after %s", obj.GetName(), opts.WaitProviderTimeout)
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func waitDeploymentReady(ctx context.Context, deployment unstructured.Unstructured, timeout time.Duration, proxy Proxy) error {
-	return wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, timeout, false, func(ctx context.Context) (bool, error) {
-		c, err := proxy.NewClient(ctx)
-		if err != nil {
-			return false, err
-		}
-		key := client.ObjectKey{
-			Namespace: deployment.GetNamespace(),
-			Name:      deployment.GetName(),
-		}
-		dep := &appsv1.Deployment{}
-		if err := c.Get(ctx, key, dep); err != nil {
-			return false, err
-		}
-		for _, c := range dep.Status.Conditions {
-			if c.Type == appsv1.DeploymentAvailable && c.Status == corev1.ConditionTrue {
-				return true, nil
-			}
-		}
-		return false, nil
-	})
 }
 
 func (i *providerInstaller) Validate(ctx context.Context) error {
@@ -241,50 +187,6 @@ func (i *providerInstaller) Validate(ctx context.Context) error {
 	return nil
 }
 
-func getCRDGroupKind(obj unstructured.Unstructured) (*schema.GroupKind, error) {
-	var group string
-	var kind string
-	version := obj.GroupVersionKind().Version
-	switch version {
-	case apiextensionsv1beta1.SchemeGroupVersion.Version:
-		crd := &apiextensionsv1beta1.CustomResourceDefinition{}
-		if err := scheme.Scheme.Convert(&obj, crd, nil); err != nil {
-			return nil, errors.Wrapf(err, "failed to convert %s CustomResourceDefinition %q", version, obj.GetName())
-		}
-		group = crd.Spec.Group
-		kind = crd.Spec.Names.Kind
-	case apiextensionsv1.SchemeGroupVersion.Version:
-		crd := &apiextensionsv1.CustomResourceDefinition{}
-		if err := scheme.Scheme.Convert(&obj, crd, nil); err != nil {
-			return nil, errors.Wrapf(err, "failed to convert %s CustomResourceDefinition %q", version, obj.GetName())
-		}
-		group = crd.Spec.Group
-		kind = crd.Spec.Names.Kind
-	default:
-		return nil, errors.Errorf("failed to read %s CustomResourceDefinition %q", version, obj.GetName())
-	}
-	return &schema.GroupKind{Group: group, Kind: kind}, nil
-}
-
-func validateCRDName(obj unstructured.Unstructured, gk *schema.GroupKind) error {
-	// Return if CRD has skip CRD name preflight check annotation.
-	if _, ok := obj.GetAnnotations()[clusterctlv1.SkipCRDNamePreflightCheckAnnotation]; ok {
-		return nil
-	}
-
-	correctCRDName := contract.CalculateCRDName(gk.Group, gk.Kind)
-
-	// Return if name is correct.
-	if obj.GetName() == correctCRDName {
-		return nil
-	}
-
-	return errors.Errorf("ERROR: CRD name %q is invalid for a CRD referenced in a core Cluster API CRD,"+
-		"it should be %q. Support for CRDs that are referenced in core Cluster API resources with invalid names has been "+
-		"dropped. Note: Please check if this CRD is actually referenced in core Cluster API "+
-		"CRDs. If not, this warning can be hidden by setting the %q' annotation.", obj.GetName(), correctCRDName, clusterctlv1.SkipCRDNamePreflightCheckAnnotation)
-}
-
 // getProviderContract returns the API Version of Cluster API (contract) for a provider instance.
 func (i *providerInstaller) getProviderContract(ctx context.Context, providerInstanceContracts map[string]string, provider clusterctlv1.Provider) (string, error) {
 	// If the contract for the provider instance is already known, return it.
@@ -329,6 +231,28 @@ func (i *providerInstaller) getProviderContract(ctx context.Context, providerIns
 	return releaseSeries.Contract, nil
 }
 
+func (i *providerInstaller) Images() []string {
+	ret := sets.Set[string]{}
+	for _, components := range i.installQueue {
+		ret = ret.Insert(components.Images()...)
+	}
+	return sets.List(ret)
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func newProviderInstaller(configClient config.Client, repositoryClientFactory RepositoryClientFactory, proxy Proxy, providerMetadata InventoryClient, providerComponents ComponentsClient) *providerInstaller {
+	return &providerInstaller{
+		configClient:            configClient,
+		repositoryClientFactory: repositoryClientFactory,
+		proxy:                   proxy,
+		providerComponents:      providerComponents,
+		providerInventory:       providerMetadata,
+	}
+}
+
 // simulateInstall adds a provider to the list of providers in a cluster (without installing it).
 func simulateInstall(providerList *clusterctlv1.ProviderList, components repository.Components) (*clusterctlv1.ProviderList, error) {
 	provider := components.InventoryObject()
@@ -349,20 +273,112 @@ func simulateInstall(providerList *clusterctlv1.ProviderList, components reposit
 	return providerList, nil
 }
 
-func (i *providerInstaller) Images() []string {
-	ret := sets.Set[string]{}
-	for _, components := range i.installQueue {
-		ret = ret.Insert(components.Images()...)
+func validateCRDName(obj unstructured.Unstructured, gk *schema.GroupKind) error {
+	// Return if CRD has skip CRD name preflight check annotation.
+	if _, ok := obj.GetAnnotations()[clusterctlv1.SkipCRDNamePreflightCheckAnnotation]; ok {
+		return nil
 	}
-	return sets.List(ret)
+
+	correctCRDName := contract.CalculateCRDName(gk.Group, gk.Kind)
+
+	// Return if name is correct.
+	if obj.GetName() == correctCRDName {
+		return nil
+	}
+
+	return errors.Errorf("ERROR: CRD name %q is invalid for a CRD referenced in a core Cluster API CRD,"+
+		"it should be %q. Support for CRDs that are referenced in core Cluster API resources with invalid names has been "+
+		"dropped. Note: Please check if this CRD is actually referenced in core Cluster API "+
+		"CRDs. If not, this warning can be hidden by setting the %q' annotation.", obj.GetName(), correctCRDName, clusterctlv1.SkipCRDNamePreflightCheckAnnotation)
 }
 
-func newProviderInstaller(configClient config.Client, repositoryClientFactory RepositoryClientFactory, proxy Proxy, providerMetadata InventoryClient, providerComponents ComponentsClient) *providerInstaller {
-	return &providerInstaller{
-		configClient:            configClient,
-		repositoryClientFactory: repositoryClientFactory,
-		proxy:                   proxy,
-		providerComponents:      providerComponents,
-		providerInventory:       providerMetadata,
+func getCRDGroupKind(obj unstructured.Unstructured) (*schema.GroupKind, error) {
+	var group string
+	var kind string
+	version := obj.GroupVersionKind().Version
+	switch version {
+	case apiextensionsv1beta1.SchemeGroupVersion.Version:
+		crd := &apiextensionsv1beta1.CustomResourceDefinition{}
+		if err := scheme.Scheme.Convert(&obj, crd, nil); err != nil {
+			return nil, errors.Wrapf(err, "failed to convert %s CustomResourceDefinition %q", version, obj.GetName())
+		}
+		group = crd.Spec.Group
+		kind = crd.Spec.Names.Kind
+	case apiextensionsv1.SchemeGroupVersion.Version:
+		crd := &apiextensionsv1.CustomResourceDefinition{}
+		if err := scheme.Scheme.Convert(&obj, crd, nil); err != nil {
+			return nil, errors.Wrapf(err, "failed to convert %s CustomResourceDefinition %q", version, obj.GetName())
+		}
+		group = crd.Spec.Group
+		kind = crd.Spec.Names.Kind
+	default:
+		return nil, errors.Errorf("failed to read %s CustomResourceDefinition %q", version, obj.GetName())
 	}
+	return &schema.GroupKind{Group: group, Kind: kind}, nil
+}
+
+func installComponentsAndUpdateInventory(ctx context.Context, components repository.Components, providerComponents ComponentsClient, providerInventory InventoryClient) error {
+	log := logf.Log
+	log.Info("Installing", "Provider", components.ManifestLabel(), "Version", components.Version(), "TargetNamespace", components.TargetNamespace())
+
+	inventoryObject := components.InventoryObject()
+
+	log.V(1).Info("Creating objects", "Provider", components.ManifestLabel(), "Version", components.Version(), "TargetNamespace", components.TargetNamespace())
+	if err := providerComponents.Create(ctx, components.Objs()); err != nil {
+		return err
+	}
+
+	log.V(1).Info("Creating inventory entry", "Provider", components.ManifestLabel(), "Version", components.Version(), "TargetNamespace", components.TargetNamespace())
+	return providerInventory.Create(ctx, inventoryObject)
+}
+
+// waitForProvidersReady waits till the installed components are ready.
+func waitForProvidersReady(ctx context.Context, opts InstallOptions, installQueue []repository.Components, proxy Proxy) error {
+	// If we dont have to wait for providers to be installed
+	// return early.
+	if !opts.WaitProviders {
+		return nil
+	}
+
+	log := logf.Log
+	log.Info("Waiting for providers to be available...")
+
+	return waitManagerDeploymentsReady(ctx, opts, installQueue, proxy)
+}
+
+// waitManagerDeploymentsReady waits till the installed manager deployments are ready.
+func waitManagerDeploymentsReady(ctx context.Context, opts InstallOptions, installQueue []repository.Components, proxy Proxy) error {
+	for _, components := range installQueue {
+		for _, obj := range components.Objs() {
+			if util.IsDeploymentWithManager(obj) {
+				if err := waitDeploymentReady(ctx, obj, opts.WaitProviderTimeout, proxy); err != nil {
+					return errors.Wrapf(err, "deployment %q is not ready after %s", obj.GetName(), opts.WaitProviderTimeout)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func waitDeploymentReady(ctx context.Context, deployment unstructured.Unstructured, timeout time.Duration, proxy Proxy) error {
+	return wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, timeout, false, func(ctx context.Context) (bool, error) {
+		c, err := proxy.NewClient(ctx)
+		if err != nil {
+			return false, err
+		}
+		key := client.ObjectKey{
+			Namespace: deployment.GetNamespace(),
+			Name:      deployment.GetName(),
+		}
+		dep := &appsv1.Deployment{}
+		if err := c.Get(ctx, key, dep); err != nil {
+			return false, err
+		}
+		for _, c := range dep.Status.Conditions {
+			if c.Type == appsv1.DeploymentAvailable && c.Status == corev1.ConditionTrue {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
 }
