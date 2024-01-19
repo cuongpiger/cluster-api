@@ -189,8 +189,11 @@ func Examples(s string) string {
 //                                                  PRIVATE FUNCTIONS                                                 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
+init
+*/
 func init() {
-	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError) // setup the CLI object
 
 	verbosity = flag.CommandLine.Int("v", 0, "Set the log level verbosity. This overrides the CLUSTERCTL_LOG_LEVEL environment variable.")
 
@@ -215,11 +218,14 @@ func init() {
 	RootCmd.SetHelpCommandGroupID(groupOther)
 	RootCmd.SetCompletionCommandGroupID(groupOther)
 
-	cobra.OnInitialize(initConfig, registerCompletionFuncForCommonFlags)
+	cobra.OnInitialize(initConfig, registerCompletionFuncForCommonFlags) // set-up at the beginning of the command
 
 	handlePlugins()
 }
 
+/*
+initConfig is used to set the log-level, log-level can be set via the config-file
+*/
 func initConfig() {
 	ctx := context.Background()
 
