@@ -27,6 +27,17 @@ import (
 	yaml "sigs.k8s.io/cluster-api/cmd/clusterctl/client/yamlprocessor"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ensure repositoryClient implements Client.
+var _ Client = &repositoryClient{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Client is used to interact with provider repositories.
 // Provider repository are expected to contain two types of YAML files:
 // - YAML files defining the provider components (CRD, Controller, RBAC etc.)
@@ -57,6 +68,42 @@ type Client interface {
 	Metadata(version string) MetadataClient
 }
 
+// Repository defines the behavior of a repository implementation.
+// clusterctl is designed to support different repository types; each repository implementation should be aware of
+// the provider version they are hosting, and possibly to host more than one version.
+type Repository interface {
+	// DefaultVersion returns the default provider version returned by a repository.
+	// In case the repository URL points to latest, this method returns the current latest version; in other cases
+	// it returns the version of the provider hosted in the repository.
+	DefaultVersion() string
+
+	// RootPath returns the path inside the repository where the YAML file for creating provider components and
+	// the YAML file for generating workload cluster templates are stored.
+	// This value is derived from the repository URL; all the paths returned by this interface should be relative to this path.
+	RootPath() string
+
+	// ComponentsPath return the path (a folder name or file name) of the YAML file for creating provider components.
+	// This value is derived from the repository URL.
+	ComponentsPath() string
+
+	// GetFile return a file for a given provider version.
+	GetFile(ctx context.Context, version string, path string) ([]byte, error)
+
+	// GetVersions return the list of versions that are available in a provider repository
+	GetVersions(ctx context.Context) ([]string, error)
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     FACTORIES                                                      //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Option is a configuration option supplied to New.
+type Option func(*repositoryClient)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // repositoryClient implements Client.
 type repositoryClient struct {
 	config.Provider
@@ -64,9 +111,6 @@ type repositoryClient struct {
 	repository   Repository
 	processor    yaml.Processor
 }
-
-// ensure repositoryClient implements Client.
-var _ Client = &repositoryClient{}
 
 func (c *repositoryClient) DefaultVersion() string {
 	return c.repository.DefaultVersion()
@@ -92,8 +136,9 @@ func (c *repositoryClient) Metadata(version string) MetadataClient {
 	return newMetadataClient(c.Provider, version, c.repository, c.configClient.Variables())
 }
 
-// Option is a configuration option supplied to New.
-type Option func(*repositoryClient)
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InjectRepository allows to override the repository implementation to use;
 // by default, the repository implementation to use is created according to the
@@ -120,52 +165,9 @@ func New(ctx context.Context, provider config.Provider, configClient config.Clie
 	return newRepositoryClient(ctx, provider, configClient, options...)
 }
 
-func newRepositoryClient(ctx context.Context, provider config.Provider, configClient config.Client, options ...Option) (*repositoryClient, error) {
-	client := &repositoryClient{
-		Provider:     provider,
-		configClient: configClient,
-		processor:    yaml.NewSimpleProcessor(),
-	}
-	for _, o := range options {
-		o(client)
-	}
-
-	// if there is an injected repository, use it, otherwise use a default one
-	if client.repository == nil {
-		r, err := repositoryFactory(ctx, provider, configClient.Variables())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get repository client for the %s with name %s", provider.Type(), provider.Name())
-		}
-		client.repository = r
-	}
-
-	return client, nil
-}
-
-// Repository defines the behavior of a repository implementation.
-// clusterctl is designed to support different repository types; each repository implementation should be aware of
-// the provider version they are hosting, and possibly to host more than one version.
-type Repository interface {
-	// DefaultVersion returns the default provider version returned by a repository.
-	// In case the repository URL points to latest, this method returns the current latest version; in other cases
-	// it returns the version of the provider hosted in the repository.
-	DefaultVersion() string
-
-	// RootPath returns the path inside the repository where the YAML file for creating provider components and
-	// the YAML file for generating workload cluster templates are stored.
-	// This value is derived from the repository URL; all the paths returned by this interface should be relative to this path.
-	RootPath() string
-
-	// ComponentsPath return the path (a folder name or file name) of the YAML file for creating provider components.
-	// This value is derived from the repository URL.
-	ComponentsPath() string
-
-	// GetFile return a file for a given provider version.
-	GetFile(ctx context.Context, version string, path string) ([]byte, error)
-
-	// GetVersions return the list of versions that are available in a provider repository
-	GetVersions(ctx context.Context) ([]string, error)
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // repositoryFactory returns the repository implementation corresponding to the provider URL.
 func repositoryFactory(ctx context.Context, providerConfig config.Provider, configVariablesClient config.VariablesClient) (Repository, error) {
@@ -207,4 +209,25 @@ func repositoryFactory(ctx context.Context, providerConfig config.Provider, conf
 	}
 
 	return nil, errors.Errorf("invalid provider url. there are no provider implementation for %q schema", rURL.Scheme)
+}
+func newRepositoryClient(ctx context.Context, provider config.Provider, configClient config.Client, options ...Option) (*repositoryClient, error) {
+	client := &repositoryClient{
+		Provider:     provider,
+		configClient: configClient,
+		processor:    yaml.NewSimpleProcessor(),
+	}
+	for _, o := range options {
+		o(client)
+	}
+
+	// if there is an injected repository, use it, otherwise use a default one
+	if client.repository == nil {
+		r, err := repositoryFactory(ctx, provider, configClient.Variables())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get repository client for the %s with name %s", provider.Type(), provider.Name())
+		}
+		client.repository = r
+	}
+
+	return client, nil
 }
