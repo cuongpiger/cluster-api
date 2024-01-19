@@ -29,15 +29,11 @@ import (
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 )
 
-// Kubeconfig is a type that specifies inputs related to the actual
-// kubeconfig.
-type Kubeconfig struct {
-	// Path to the kubeconfig file
-	Path string
-	// Specify context within the kubeconfig file. If empty, cluster client
-	// will use the current context.
-	Context string
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// **************************************************************************************************** interface.Client
 
 // Client is used to interact with a management cluster.
 // A management cluster contains following categories of objects:
@@ -84,8 +80,31 @@ type Client interface {
 	Topology() TopologyClient
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     FACTORIES                                                      //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// RepositoryClientFactory defines a function that returns a new repository.Client.
+type RepositoryClientFactory func(ctx context.Context, provider config.Provider, configClient config.Client,
+	options ...repository.Option) (repository.Client, error)
+
 // PollImmediateWaiter tries a condition func until it returns true, an error, or the timeout is reached.
 type PollImmediateWaiter func(ctx context.Context, interval, timeout time.Duration, condition wait.ConditionWithContextFunc) error
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// *************************************************************************************************** struct.Kubeconfig
+
+// Kubeconfig is a type that specifies inputs related to the actual kubeconfig.
+type Kubeconfig struct {
+	// Path to the kubeconfig file
+	Path string
+	// Specify context within the kubeconfig file. If empty, cluster client
+	// will use the current context.
+	Context string
+}
 
 // clusterClient implements Client.
 type clusterClient struct {
@@ -96,9 +115,6 @@ type clusterClient struct {
 	pollImmediateWaiter     PollImmediateWaiter
 	processor               yaml.Processor
 }
-
-// RepositoryClientFactory defines a function that returns a new repository.Client.
-type RepositoryClientFactory func(ctx context.Context, provider config.Provider, configClient config.Client, options ...repository.Option) (repository.Client, error)
 
 // ensure clusterClient implements Client.
 var _ Client = &clusterClient{}

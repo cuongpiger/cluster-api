@@ -136,16 +136,6 @@ type ClusterClientFactoryInput struct {
 	Processor  Processor
 }
 
-// ********************************************************************************************* struct.clusterctlClient
-
-// clusterctlClient implements Client.
-type clusterctlClient struct {
-	configClient            config.Client
-	repositoryClientFactory RepositoryClientFactory
-	clusterClientFactory    ClusterClientFactory
-	alphaClient             alpha.Client
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                      FACTORIES                                                     //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

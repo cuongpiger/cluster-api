@@ -6,8 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="f44e5d1b-4145-4f30-8a8b-4d0f7370d863" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/clusterctl/client/config/reader_viper.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/clusterctl/client/config/reader_viper.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/clusterctl/cmd/root.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/clusterctl/cmd/root.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/clusterctl/client/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/clusterctl/client/client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/clusterctl/client/init.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/clusterctl/client/init.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -79,5 +79,21 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/clusterctl/cmd/init.go</url>
+          <line>136</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/clusterctl/client/init.go</url>
+          <line>122</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

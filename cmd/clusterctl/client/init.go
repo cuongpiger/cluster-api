@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/alpha"
 	"sort"
 	"time"
 
@@ -30,8 +31,18 @@ import (
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // NoopProvider determines if a provider passed in should behave as a no-op.
 const NoopProvider = "-"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                       STRUCTS                                                      //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ************************************************************************************************** struct.InitOptions
 
 // InitOptions carries the options supported by Init.
 type InitOptions struct {
@@ -87,6 +98,25 @@ type InitOptions struct {
 	// allowMissingProviderCRD is used to allow for a missing provider CRD when listing images.
 	// It is set to false to enforce that provider CRD is available when performing the standard init operation.
 	allowMissingProviderCRD bool
+}
+
+// **************************************************************************************** struct.addToInstallerOptions
+
+type addToInstallerOptions struct {
+	installer           cluster.ProviderInstaller
+	targetNamespace     string
+	skipTemplateProcess bool
+	providerList        *clusterctlv1.ProviderList
+}
+
+// ********************************************************************************************* struct.clusterctlClient
+
+// clusterctlClient implements Client.
+type clusterctlClient struct {
+	configClient            config.Client
+	repositoryClientFactory RepositoryClientFactory
+	clusterClientFactory    ClusterClientFactory
+	alphaClient             alpha.Client
 }
 
 // Init initializes a management cluster by adding the requested list of providers.
@@ -294,13 +324,6 @@ func (c *clusterctlClient) addDefaultProviders(ctx context.Context, cluster clus
 		}
 	}
 	return firstRun
-}
-
-type addToInstallerOptions struct {
-	installer           cluster.ProviderInstaller
-	targetNamespace     string
-	skipTemplateProcess bool
-	providerList        *clusterctlv1.ProviderList
 }
 
 // addToInstaller adds the components to the install queue and checks that the actual provider type match the target group.
