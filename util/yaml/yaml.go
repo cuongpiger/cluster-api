@@ -39,29 +39,11 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 )
 
-// ExtractClusterReferences returns the references in a Cluster object.
-func ExtractClusterReferences(out *ParseOutput, c *clusterv1.Cluster) (res []*unstructured.Unstructured) {
-	if c.Spec.InfrastructureRef == nil {
-		return nil
-	}
-	if obj := out.FindUnstructuredReference(c.Spec.InfrastructureRef); obj != nil {
-		res = append(res, obj)
-	}
-	return
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// ExtractMachineReferences returns the references in a Machine object.
-func ExtractMachineReferences(out *ParseOutput, m *clusterv1.Machine) (res []*unstructured.Unstructured) {
-	if obj := out.FindUnstructuredReference(&m.Spec.InfrastructureRef); obj != nil {
-		res = append(res, obj)
-	}
-	if m.Spec.Bootstrap.ConfigRef != nil {
-		if obj := out.FindUnstructuredReference(m.Spec.Bootstrap.ConfigRef); obj != nil {
-			res = append(res, obj)
-		}
-	}
-	return
-}
+// ************************************************************************************************** struct.ParseOutput
 
 // ParseOutput is the output given from the Parse function.
 type ParseOutput struct {
@@ -94,70 +76,14 @@ func (p *ParseOutput) FindUnstructuredReference(ref *corev1.ObjectReference) *un
 	return nil
 }
 
+// *************************************************************************************************** struct.ParseInput
+
 // ParseInput is an input struct for the Parse function.
 type ParseInput struct {
 	File string
 }
 
-// Parse extracts runtime objects from a file.
-func Parse(input ParseInput) (*ParseOutput, error) {
-	output := &ParseOutput{}
-
-	// Open the input file.
-	reader, err := os.Open(input.File)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new decoder.
-	decoder := NewYAMLDecoder(reader)
-	defer decoder.Close()
-
-	for {
-		u := &unstructured.Unstructured{}
-		_, gvk, err := decoder.Decode(nil, u)
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if runtime.IsNotRegisteredError(err) {
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		switch gvk.Kind {
-		case "Cluster":
-			obj := &clusterv1.Cluster{}
-			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj); err != nil {
-				return nil, errors.Wrapf(err, "cannot convert object to %s", gvk.Kind)
-			}
-			output.Clusters = append(output.Clusters, obj)
-		case "Machine":
-			obj := &clusterv1.Machine{}
-			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj); err != nil {
-				return nil, errors.Wrapf(err, "cannot convert object to %s", gvk.Kind)
-			}
-			output.Machines = append(output.Machines, obj)
-		case "MachineSet":
-			obj := &clusterv1.MachineSet{}
-			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj); err != nil {
-				return nil, errors.Wrapf(err, "cannot convert object to %s", gvk.Kind)
-			}
-			output.MachineSets = append(output.MachineSets, obj)
-		case "MachineDeployment":
-			obj := &clusterv1.MachineDeployment{}
-			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj); err != nil {
-				return nil, errors.Wrapf(err, "cannot convert object to %s", gvk.Kind)
-			}
-			output.MachineDeployments = append(output.MachineDeployments, obj)
-		default:
-			output.UnstructuredObjects = append(output.UnstructuredObjects, u)
-		}
-	}
-
-	return output, nil
-}
+// ************************************************************************************************** struct.yamlDecoder
 
 type yamlDecoder struct {
 	reader  *apiyaml.YAMLReader
@@ -184,6 +110,10 @@ func (d *yamlDecoder) Decode(defaults *schema.GroupVersionKind, into runtime.Obj
 func (d *yamlDecoder) Close() error {
 	return d.close()
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // NewYAMLDecoder returns a new streaming Decoded that supports YAML.
 func NewYAMLDecoder(r io.ReadCloser) streaming.Decoder {
@@ -276,4 +206,88 @@ func FromUnstructured(objs []unstructured.Unstructured) ([]byte, error) {
 // While writing yaml, always use space instead of tabs for indentation.
 func Raw(raw string) string {
 	return strings.TrimPrefix(heredoc.Doc(raw), "\n")
+}
+
+// ExtractClusterReferences returns the references in a Cluster object.
+func ExtractClusterReferences(out *ParseOutput, c *clusterv1.Cluster) (res []*unstructured.Unstructured) {
+	if c.Spec.InfrastructureRef == nil {
+		return nil
+	}
+	if obj := out.FindUnstructuredReference(c.Spec.InfrastructureRef); obj != nil {
+		res = append(res, obj)
+	}
+	return
+}
+
+// ExtractMachineReferences returns the references in a Machine object.
+func ExtractMachineReferences(out *ParseOutput, m *clusterv1.Machine) (res []*unstructured.Unstructured) {
+	if obj := out.FindUnstructuredReference(&m.Spec.InfrastructureRef); obj != nil {
+		res = append(res, obj)
+	}
+	if m.Spec.Bootstrap.ConfigRef != nil {
+		if obj := out.FindUnstructuredReference(m.Spec.Bootstrap.ConfigRef); obj != nil {
+			res = append(res, obj)
+		}
+	}
+	return
+}
+
+// Parse extracts runtime objects from a file.
+func Parse(input ParseInput) (*ParseOutput, error) {
+	output := &ParseOutput{}
+
+	// Open the input file.
+	reader, err := os.Open(input.File)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new decoder.
+	decoder := NewYAMLDecoder(reader)
+	defer decoder.Close()
+
+	for {
+		u := &unstructured.Unstructured{}
+		_, gvk, err := decoder.Decode(nil, u)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if runtime.IsNotRegisteredError(err) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		switch gvk.Kind {
+		case "Cluster":
+			obj := &clusterv1.Cluster{}
+			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj); err != nil {
+				return nil, errors.Wrapf(err, "cannot convert object to %s", gvk.Kind)
+			}
+			output.Clusters = append(output.Clusters, obj)
+		case "Machine":
+			obj := &clusterv1.Machine{}
+			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj); err != nil {
+				return nil, errors.Wrapf(err, "cannot convert object to %s", gvk.Kind)
+			}
+			output.Machines = append(output.Machines, obj)
+		case "MachineSet":
+			obj := &clusterv1.MachineSet{}
+			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj); err != nil {
+				return nil, errors.Wrapf(err, "cannot convert object to %s", gvk.Kind)
+			}
+			output.MachineSets = append(output.MachineSets, obj)
+		case "MachineDeployment":
+			obj := &clusterv1.MachineDeployment{}
+			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj); err != nil {
+				return nil, errors.Wrapf(err, "cannot convert object to %s", gvk.Kind)
+			}
+			output.MachineDeployments = append(output.MachineDeployments, obj)
+		default:
+			output.UnstructuredObjects = append(output.UnstructuredObjects, u)
+		}
+	}
+
+	return output, nil
 }
