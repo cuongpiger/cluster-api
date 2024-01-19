@@ -25,21 +25,9 @@ import (
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client"
 )
 
-type initOptions struct {
-	kubeconfig                string
-	kubeconfigContext         string
-	coreProvider              string
-	bootstrapProviders        []string
-	controlPlaneProviders     []string
-	infrastructureProviders   []string
-	ipamProviders             []string
-	runtimeExtensionProviders []string
-	addonProviders            []string
-	targetNamespace           string
-	validate                  bool
-	waitProviders             bool
-	waitProviderTimeout       int
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 var initOpts = &initOptions{}
 
@@ -87,6 +75,31 @@ var initCmd = &cobra.Command{
 		return runInit()
 	},
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ************************************************************************************************** struct.initOptions
+type initOptions struct {
+	kubeconfig                string
+	kubeconfigContext         string
+	coreProvider              string
+	bootstrapProviders        []string
+	controlPlaneProviders     []string
+	infrastructureProviders   []string
+	ipamProviders             []string
+	runtimeExtensionProviders []string
+	addonProviders            []string
+	targetNamespace           string
+	validate                  bool
+	waitProviders             bool
+	waitProviderTimeout       int
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func init() {
 	initCmd.PersistentFlags().StringVar(&initOpts.kubeconfig, "kubeconfig", "",

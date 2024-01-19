@@ -20,9 +20,7 @@ test/e2e/data/infrastructure-inmemory/**/cluster-template*.yaml
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# IntelliJ
-.idea/
-*.iml
+# IntelliJ IDEA
 
 # VSCode
 .vscode/
