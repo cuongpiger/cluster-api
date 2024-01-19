@@ -250,6 +250,9 @@ func initConfig() {
 	ctrl.SetLogger(log)
 }
 
+/*
+registerCompletionFuncForCommonFlags sets up the completion function for the common flags
+*/
 func registerCompletionFuncForCommonFlags() {
 	visitCommands(RootCmd, func(cmd *cobra.Command) {
 		if kubeconfigFlag := cmd.Flags().Lookup("kubeconfig"); kubeconfigFlag != nil {

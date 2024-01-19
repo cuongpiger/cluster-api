@@ -34,6 +34,10 @@ import (
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const (
 	// ConfigFolder defines the old name of the config folder under $HOME.
 	ConfigFolder = ".cluster-api"
@@ -45,33 +49,16 @@ const (
 	DownloadConfigFile = "clusterctl-download.yaml"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                       STRUCTS                                                      //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ************************************************************************************************** struct.viperReader
+
 // viperReader implements Reader using viper as backend for reading from environment variables
 // and from a clusterctl config file.
 type viperReader struct {
 	configPaths []string
-}
-
-type viperReaderOption func(*viperReader)
-
-func injectConfigPaths(configPaths []string) viperReaderOption {
-	return func(vr *viperReader) {
-		vr.configPaths = configPaths
-	}
-}
-
-// newViperReader returns a viperReader.
-func newViperReader(opts ...viperReaderOption) (Reader, error) {
-	configDirectory, err := xdg.ConfigFile(ConfigFolderXDG)
-	if err != nil {
-		return nil, err
-	}
-	vr := &viperReader{
-		configPaths: []string{configDirectory, filepath.Join(xdg.Home, ConfigFolder)},
-	}
-	for _, o := range opts {
-		o(vr)
-	}
-	return vr, nil
 }
 
 // Init initialize the viperReader.
@@ -141,6 +128,62 @@ func (v *viperReader) Init(ctx context.Context, path string) error {
 	return nil
 }
 
+func (v *viperReader) Get(key string) (string, error) {
+	if viper.Get(key) == nil {
+		return "", errors.Errorf("Failed to get value for variable %q. Please set the variable value using os env variables or using the .clusterctl config file", key)
+	}
+	return viper.GetString(key), nil
+}
+
+func (v *viperReader) Set(key, value string) {
+	viper.Set(key, value)
+}
+
+func (v *viperReader) UnmarshalKey(key string, rawval interface{}) error {
+	return viper.UnmarshalKey(key, rawval)
+}
+
+// checkDefaultConfig checks the existence of the default config.
+// Returns true if it finds a supported config file in the available config
+// folders.
+func (v *viperReader) checkDefaultConfig() bool {
+	for _, path := range v.configPaths {
+		for _, ext := range viper.SupportedExts {
+			f := filepath.Join(path, fmt.Sprintf("%s.%s", ConfigName, ext))
+			_, err := os.Stat(f)
+			if err == nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     FACTORIES                                                      //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type viperReaderOption func(*viperReader)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// newViperReader returns a viperReader.
+func newViperReader(opts ...viperReaderOption) (Reader, error) {
+	configDirectory, err := xdg.ConfigFile(ConfigFolderXDG)
+	if err != nil {
+		return nil, err
+	}
+	vr := &viperReader{
+		configPaths: []string{configDirectory, filepath.Join(xdg.Home, ConfigFolder)},
+	}
+	for _, o := range opts {
+		o(vr)
+	}
+	return vr, nil
+}
+
 func downloadFile(ctx context.Context, url string, filepath string) error {
 	// Create the file
 	out, err := os.Create(filepath) //nolint:gosec // No security issue: filepath is safe.
@@ -176,33 +219,8 @@ func downloadFile(ctx context.Context, url string, filepath string) error {
 	return nil
 }
 
-func (v *viperReader) Get(key string) (string, error) {
-	if viper.Get(key) == nil {
-		return "", errors.Errorf("Failed to get value for variable %q. Please set the variable value using os env variables or using the .clusterctl config file", key)
+func injectConfigPaths(configPaths []string) viperReaderOption {
+	return func(vr *viperReader) {
+		vr.configPaths = configPaths
 	}
-	return viper.GetString(key), nil
-}
-
-func (v *viperReader) Set(key, value string) {
-	viper.Set(key, value)
-}
-
-func (v *viperReader) UnmarshalKey(key string, rawval interface{}) error {
-	return viper.UnmarshalKey(key, rawval)
-}
-
-// checkDefaultConfig checks the existence of the default config.
-// Returns true if it finds a supported config file in the available config
-// folders.
-func (v *viperReader) checkDefaultConfig() bool {
-	for _, path := range v.configPaths {
-		for _, ext := range viper.SupportedExts {
-			f := filepath.Join(path, fmt.Sprintf("%s.%s", ConfigName, ext))
-			_, err := os.Stat(f)
-			if err == nil {
-				return true
-			}
-		}
-	}
-	return false
 }
