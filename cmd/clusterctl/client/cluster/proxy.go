@@ -42,9 +42,22 @@ import (
 	"sigs.k8s.io/cluster-api/version"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ProxyOption defines a function that can change proxy options.
+type ProxyOption func(p *proxy)
+
+var _ Proxy = &proxy{}
+
 var (
 	localScheme = scheme.Scheme
 )
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Proxy defines a client proxy interface.
 type Proxy interface {
@@ -78,13 +91,15 @@ type Proxy interface {
 	GetResourceNames(ctx context.Context, groupVersion, kind string, options []client.ListOption, prefix string) ([]string, error)
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type proxy struct {
 	kubeconfig         Kubeconfig
 	timeout            time.Duration
 	configLoadingRules *clientcmd.ClientConfigLoadingRules
 }
-
-var _ Proxy = &proxy{}
 
 // CurrentNamespace returns the namespace for the specified context or the
 // first valid context as determined by the default config loading rules.
@@ -342,57 +357,6 @@ func (k *proxy) GetResourceNames(ctx context.Context, groupVersion, kind string,
 	return comps, nil
 }
 
-func listObjByGVK(ctx context.Context, c client.Client, groupVersion, kind string, options []client.ListOption) (*unstructured.UnstructuredList, error) {
-	objList := new(unstructured.UnstructuredList)
-	objList.SetAPIVersion(groupVersion)
-	objList.SetKind(kind)
-
-	resourceListBackoff := newReadBackoff()
-	if err := retryWithExponentialBackoff(ctx, resourceListBackoff, func(ctx context.Context) error {
-		return c.List(ctx, objList, options...)
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to list objects for the %q GroupVersionKind", objList.GroupVersionKind())
-	}
-
-	return objList, nil
-}
-
-// ProxyOption defines a function that can change proxy options.
-type ProxyOption func(p *proxy)
-
-// InjectProxyTimeout sets the proxy timeout.
-func InjectProxyTimeout(t time.Duration) ProxyOption {
-	return func(p *proxy) {
-		p.timeout = t
-	}
-}
-
-// InjectKubeconfigPaths sets the kubeconfig paths loading rules.
-func InjectKubeconfigPaths(paths []string) ProxyOption {
-	return func(p *proxy) {
-		p.configLoadingRules.Precedence = paths
-	}
-}
-
-func newProxy(kubeconfig Kubeconfig, opts ...ProxyOption) Proxy {
-	// If a kubeconfig file isn't provided, find one in the standard locations.
-	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	if kubeconfig.Path != "" {
-		rules.ExplicitPath = kubeconfig.Path
-	}
-	p := &proxy{
-		kubeconfig:         kubeconfig,
-		timeout:            30 * time.Second,
-		configLoadingRules: rules,
-	}
-
-	for _, o := range opts {
-		o(p)
-	}
-
-	return p
-}
-
 func (k *proxy) newClientSet(ctx context.Context) (*kubernetes.Clientset, error) {
 	config, err := k.GetConfig()
 	if err != nil {
@@ -414,4 +378,60 @@ func (k *proxy) newClientSet(ctx context.Context) (*kubernetes.Clientset, error)
 	}
 
 	return cs, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// InjectProxyTimeout sets the proxy timeout.
+func InjectProxyTimeout(t time.Duration) ProxyOption {
+	return func(p *proxy) {
+		p.timeout = t
+	}
+}
+
+// InjectKubeconfigPaths sets the kubeconfig paths loading rules.
+func InjectKubeconfigPaths(paths []string) ProxyOption {
+	return func(p *proxy) {
+		p.configLoadingRules.Precedence = paths
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PRIVATE FUNCTIONS                                                 //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func listObjByGVK(ctx context.Context, c client.Client, groupVersion, kind string, options []client.ListOption) (*unstructured.UnstructuredList, error) {
+	objList := new(unstructured.UnstructuredList)
+	objList.SetAPIVersion(groupVersion)
+	objList.SetKind(kind)
+
+	resourceListBackoff := newReadBackoff()
+	if err := retryWithExponentialBackoff(ctx, resourceListBackoff, func(ctx context.Context) error {
+		return c.List(ctx, objList, options...)
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to list objects for the %q GroupVersionKind", objList.GroupVersionKind())
+	}
+
+	return objList, nil
+}
+
+func newProxy(kubeconfig Kubeconfig, opts ...ProxyOption) Proxy {
+	// If a kubeconfig file isn't provided, find one in the standard locations.
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if kubeconfig.Path != "" {
+		rules.ExplicitPath = kubeconfig.Path
+	}
+	p := &proxy{
+		kubeconfig:         kubeconfig,
+		timeout:            30 * time.Second,
+		configLoadingRules: rules,
+	}
+
+	for _, o := range opts {
+		o(p)
+	}
+
+	return p
 }
