@@ -27,6 +27,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const (
 	// MinimumKubernetesVersion defines the minimum Kubernetes version that can be used in a Management Cluster.
 	MinimumKubernetesVersion = "v1.20.0"
@@ -35,6 +39,41 @@ const (
 	// Management Cluster when enabling the ClusterTopology feature gate.
 	MinimumKubernetesVersionClusterTopology = "v1.22.0"
 )
+
+var (
+	gitMajor     string // major version, always numeric
+	gitMinor     string // minor version, numeric possibly followed by "+"
+	gitVersion   string // semantic version, derived by build scripts
+	gitCommit    string // sha1 from git, output of $(git rev-parse HEAD)
+	gitTreeState string // state of git tree, either "clean" or "dirty"
+	buildDate    string // build date in ISO8601 format, output of $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Info exposes information about the version used for the current running code.
+type Info struct {
+	Major        string `json:"major,omitempty"`
+	Minor        string `json:"minor,omitempty"`
+	GitVersion   string `json:"gitVersion,omitempty"`
+	GitCommit    string `json:"gitCommit,omitempty"`
+	GitTreeState string `json:"gitTreeState,omitempty"`
+	BuildDate    string `json:"buildDate,omitempty"`
+	GoVersion    string `json:"goVersion,omitempty"`
+	Compiler     string `json:"compiler,omitempty"`
+	Platform     string `json:"platform,omitempty"`
+}
+
+// String returns info as a human-friendly version string.
+func (info Info) String() string {
+	return info.GitVersion
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // CheckKubernetesVersion return an error if the Kubernetes version in a cluster is lower than the specified minK8sVersion.
 func CheckKubernetesVersion(config *rest.Config, minK8sVersion string) error {
@@ -55,28 +94,6 @@ func CheckKubernetesVersion(config *rest.Config, minK8sVersion string) error {
 	return nil
 }
 
-var (
-	gitMajor     string // major version, always numeric
-	gitMinor     string // minor version, numeric possibly followed by "+"
-	gitVersion   string // semantic version, derived by build scripts
-	gitCommit    string // sha1 from git, output of $(git rev-parse HEAD)
-	gitTreeState string // state of git tree, either "clean" or "dirty"
-	buildDate    string // build date in ISO8601 format, output of $(date -u +'%Y-%m-%dT%H:%M:%SZ')
-)
-
-// Info exposes information about the version used for the current running code.
-type Info struct {
-	Major        string `json:"major,omitempty"`
-	Minor        string `json:"minor,omitempty"`
-	GitVersion   string `json:"gitVersion,omitempty"`
-	GitCommit    string `json:"gitCommit,omitempty"`
-	GitTreeState string `json:"gitTreeState,omitempty"`
-	BuildDate    string `json:"buildDate,omitempty"`
-	GoVersion    string `json:"goVersion,omitempty"`
-	Compiler     string `json:"compiler,omitempty"`
-	Platform     string `json:"platform,omitempty"`
-}
-
 // Get returns an Info object with all the information about the current running code.
 func Get() Info {
 	return Info{
@@ -90,9 +107,4 @@ func Get() Info {
 		Compiler:     runtime.Compiler,
 		Platform:     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
 	}
-}
-
-// String returns info as a human-friendly version string.
-func (info Info) String() string {
-	return info.GitVersion
 }
