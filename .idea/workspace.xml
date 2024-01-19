@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f44e5d1b-4145-4f30-8a8b-4d0f7370d863" name="Changes" comment="" />
+    <list default="true" id="f44e5d1b-4145-4f30-8a8b-4d0f7370d863" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/clusterctl/client/cluster/inventory.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/clusterctl/client/cluster/inventory.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

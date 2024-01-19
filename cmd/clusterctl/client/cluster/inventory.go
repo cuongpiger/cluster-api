@@ -37,56 +37,26 @@ import (
 	utilyaml "sigs.k8s.io/cluster-api/util/yaml"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const (
 	waitInventoryCRDInterval = 250 * time.Millisecond
 	waitInventoryCRDTimeout  = 1 * time.Minute
 )
 
+// ensure inventoryClient implements InventoryClient.
+var _ InventoryClient = &inventoryClient{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // CheckCAPIContractOption is some configuration that modifies options for CheckCAPIContract.
 type CheckCAPIContractOption interface {
 	// Apply applies this configuration to the given CheckCAPIContractOptions.
 	Apply(*CheckCAPIContractOptions)
-}
-
-// CheckCAPIContractOptions contains options for CheckCAPIContract.
-type CheckCAPIContractOptions struct {
-	// AllowCAPINotInstalled instructs CheckCAPIContract to tolerate management clusters without Cluster API installed yet.
-	AllowCAPINotInstalled bool
-
-	// AllowCAPIContracts instructs CheckCAPIContract to tolerate management clusters with Cluster API with the given contract.
-	AllowCAPIContracts []string
-
-	// AllowCAPIAnyContract instructs CheckCAPIContract to tolerate management clusters with Cluster API installed with any contract.
-	AllowCAPIAnyContract bool
-}
-
-// AllowCAPINotInstalled instructs CheckCAPIContract to tolerate management clusters without Cluster API installed yet.
-// NOTE: This allows clusterctl init to run on empty management clusters.
-type AllowCAPINotInstalled struct{}
-
-// Apply applies this configuration to the given CheckCAPIContractOptions.
-func (t AllowCAPINotInstalled) Apply(in *CheckCAPIContractOptions) {
-	in.AllowCAPINotInstalled = true
-}
-
-// AllowCAPIAnyContract instructs CheckCAPIContract to tolerate management clusters with Cluster API with any contract.
-// NOTE: This allows clusterctl generate cluster with managed topologies to work properly by performing checks to see if CAPI is installed.
-type AllowCAPIAnyContract struct{}
-
-// Apply applies this configuration to the given CheckCAPIContractOptions.
-func (t AllowCAPIAnyContract) Apply(in *CheckCAPIContractOptions) {
-	in.AllowCAPIAnyContract = true
-}
-
-// AllowCAPIContract instructs CheckCAPIContract to tolerate management clusters with Cluster API with the given contract.
-// NOTE: This allows clusterctl upgrade to work on management clusters with old contract.
-type AllowCAPIContract struct {
-	Contract string
-}
-
-// Apply applies this configuration to the given CheckCAPIContractOptions.
-func (t AllowCAPIContract) Apply(in *CheckCAPIContractOptions) {
-	in.AllowCAPIContracts = append(in.AllowCAPIContracts, t.Contract)
 }
 
 // InventoryClient exposes methods to interface with a cluster's provider inventory.
@@ -124,21 +94,65 @@ type InventoryClient interface {
 	CheckSingleProviderInstance(ctx context.Context) error
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ************************************************************************************* struct.CheckCAPIContractOptions
+
+// CheckCAPIContractOptions contains options for CheckCAPIContract.
+type CheckCAPIContractOptions struct {
+	// AllowCAPINotInstalled instructs CheckCAPIContract to tolerate management clusters without Cluster API installed yet.
+	AllowCAPINotInstalled bool
+
+	// AllowCAPIContracts instructs CheckCAPIContract to tolerate management clusters with Cluster API with the given contract.
+	AllowCAPIContracts []string
+
+	// AllowCAPIAnyContract instructs CheckCAPIContract to tolerate management clusters with Cluster API installed with any contract.
+	AllowCAPIAnyContract bool
+}
+
+// **************************************************************************************** struct.AllowCAPINotInstalled
+
+// AllowCAPINotInstalled instructs CheckCAPIContract to tolerate management clusters without Cluster API installed yet.
+// NOTE: This allows clusterctl init to run on empty management clusters.
+type AllowCAPINotInstalled struct{}
+
+// Apply applies this configuration to the given CheckCAPIContractOptions.
+func (t AllowCAPINotInstalled) Apply(in *CheckCAPIContractOptions) {
+	in.AllowCAPINotInstalled = true
+}
+
+// ***************************************************************************************** struct.AllowCAPIAnyContract
+
+// AllowCAPIAnyContract instructs CheckCAPIContract to tolerate management clusters with Cluster API with any contract.
+// NOTE: This allows clusterctl generate cluster with managed topologies to work properly by performing checks to see if CAPI is installed.
+type AllowCAPIAnyContract struct{}
+
+// Apply applies this configuration to the given CheckCAPIContractOptions.
+func (t AllowCAPIAnyContract) Apply(in *CheckCAPIContractOptions) {
+	in.AllowCAPIAnyContract = true
+}
+
+// ******************************************************************************************** struct.AllowCAPIContract
+
+// AllowCAPIContract instructs CheckCAPIContract to tolerate management clusters with Cluster API with the given contract.
+// NOTE: This allows clusterctl upgrade to work on management clusters with old contract.
+type AllowCAPIContract struct {
+	Contract string
+}
+
+// Apply applies this configuration to the given CheckCAPIContractOptions.
+func (t AllowCAPIContract) Apply(in *CheckCAPIContractOptions) {
+	in.AllowCAPIContracts = append(in.AllowCAPIContracts, t.Contract)
+}
+
+// ********************************************************************************************** struct.inventoryClient
+
 // inventoryClient implements InventoryClient.
 type inventoryClient struct {
 	proxy               Proxy
 	pollImmediateWaiter PollImmediateWaiter
-}
-
-// ensure inventoryClient implements InventoryClient.
-var _ InventoryClient = &inventoryClient{}
-
-// newInventoryClient returns a inventoryClient.
-func newInventoryClient(proxy Proxy, pollImmediateWaiter PollImmediateWaiter) *inventoryClient {
-	return &inventoryClient{
-		proxy:               proxy,
-		pollImmediateWaiter: pollImmediateWaiter,
-	}
 }
 
 func (p *inventoryClient) EnsureCustomResourceDefinitions(ctx context.Context) error {
@@ -221,114 +235,6 @@ func (p *inventoryClient) EnsureCustomResourceDefinitions(ctx context.Context) e
 		}
 	}
 
-	return nil
-}
-
-// checkInventoryCRDs checks if the inventory CRDs are installed in the cluster.
-func checkInventoryCRDs(ctx context.Context, proxy Proxy) (bool, error) {
-	c, err := proxy.NewClient(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	if err := c.Get(ctx, client.ObjectKey{Name: fmt.Sprintf("providers.%s", clusterctlv1.GroupVersion.Group)}, crd); err != nil {
-		if apierrors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, errors.Wrap(err, "failed to check if the clusterctl inventory CRD exists")
-	}
-
-	for _, version := range crd.Spec.Versions {
-		if version.Name == clusterctlv1.GroupVersion.Version {
-			return true, nil
-		}
-	}
-	return true, errors.Errorf("clusterctl inventory CRD does not defines the %s version", clusterctlv1.GroupVersion.Version)
-}
-
-func (p *inventoryClient) createObj(ctx context.Context, o unstructured.Unstructured) error {
-	c, err := p.proxy.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	labels := o.GetLabels()
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	labels[clusterctlv1.ClusterctlCoreLabel] = clusterctlv1.ClusterctlCoreLabelInventoryValue
-	o.SetLabels(labels)
-
-	if err := c.Create(ctx, &o); err != nil {
-		if apierrors.IsAlreadyExists(err) {
-			return nil
-		}
-		return errors.Wrapf(err, "failed to create clusterctl inventory CRDs component: %s, %s/%s", o.GroupVersionKind(), o.GetNamespace(), o.GetName())
-	}
-	return nil
-}
-
-func (p *inventoryClient) Create(ctx context.Context, m clusterctlv1.Provider) error {
-	// Create the Kubernetes object.
-	createInventoryObjectBackoff := newWriteBackoff()
-	return retryWithExponentialBackoff(ctx, createInventoryObjectBackoff, func(ctx context.Context) error {
-		cl, err := p.proxy.NewClient(ctx)
-		if err != nil {
-			return err
-		}
-
-		currentProvider := &clusterctlv1.Provider{}
-		key := client.ObjectKey{
-			Namespace: m.Namespace,
-			Name:      m.Name,
-		}
-		if err := cl.Get(ctx, key, currentProvider); err != nil {
-			if !apierrors.IsNotFound(err) {
-				return errors.Wrapf(err, "failed to get current provider object")
-			}
-
-			// if it does not exists, create the provider object
-			if err := cl.Create(ctx, &m); err != nil {
-				return errors.Wrapf(err, "failed to create provider object")
-			}
-			return nil
-		}
-
-		// otherwise patch the provider object
-		// NB. we are using client.Merge PatchOption so the new objects gets compared with the current one server side
-		m.SetResourceVersion(currentProvider.GetResourceVersion())
-		if err := cl.Patch(ctx, &m, client.Merge); err != nil {
-			return errors.Wrapf(err, "failed to patch provider object")
-		}
-
-		return nil
-	})
-}
-
-func (p *inventoryClient) List(ctx context.Context) (*clusterctlv1.ProviderList, error) {
-	providerList := &clusterctlv1.ProviderList{}
-
-	listProvidersBackoff := newReadBackoff()
-	if err := retryWithExponentialBackoff(ctx, listProvidersBackoff, func(ctx context.Context) error {
-		return listProviders(ctx, p.proxy, providerList)
-	}); err != nil {
-		return nil, err
-	}
-
-	return providerList, nil
-}
-
-// listProviders retrieves the list of provider inventory objects.
-func listProviders(ctx context.Context, proxy Proxy, providerList *clusterctlv1.ProviderList) error {
-	cl, err := proxy.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	if err := cl.List(ctx, providerList); err != nil {
-		return errors.Wrap(err, "failed get providers")
-	}
 	return nil
 }
 
@@ -471,5 +377,125 @@ func (p *inventoryClient) CheckSingleProviderInstance(ctx context.Context) error
 			"but clusterctl does not support this use case. See https://cluster-api.sigs.k8s.io/developer/architecture/controllers/support-multiple-instances.html for more details")
 	}
 
+	return nil
+}
+
+func (p *inventoryClient) createObj(ctx context.Context, o unstructured.Unstructured) error {
+	c, err := p.proxy.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	labels := o.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels[clusterctlv1.ClusterctlCoreLabel] = clusterctlv1.ClusterctlCoreLabelInventoryValue
+	o.SetLabels(labels)
+
+	if err := c.Create(ctx, &o); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			return nil
+		}
+		return errors.Wrapf(err, "failed to create clusterctl inventory CRDs component: %s, %s/%s", o.GroupVersionKind(), o.GetNamespace(), o.GetName())
+	}
+	return nil
+}
+
+func (p *inventoryClient) Create(ctx context.Context, m clusterctlv1.Provider) error {
+	// Create the Kubernetes object.
+	createInventoryObjectBackoff := newWriteBackoff()
+	return retryWithExponentialBackoff(ctx, createInventoryObjectBackoff, func(ctx context.Context) error {
+		cl, err := p.proxy.NewClient(ctx)
+		if err != nil {
+			return err
+		}
+
+		currentProvider := &clusterctlv1.Provider{}
+		key := client.ObjectKey{
+			Namespace: m.Namespace,
+			Name:      m.Name,
+		}
+		if err := cl.Get(ctx, key, currentProvider); err != nil {
+			if !apierrors.IsNotFound(err) {
+				return errors.Wrapf(err, "failed to get current provider object")
+			}
+
+			// if it does not exists, create the provider object
+			if err := cl.Create(ctx, &m); err != nil {
+				return errors.Wrapf(err, "failed to create provider object")
+			}
+			return nil
+		}
+
+		// otherwise patch the provider object
+		// NB. we are using client.Merge PatchOption so the new objects gets compared with the current one server side
+		m.SetResourceVersion(currentProvider.GetResourceVersion())
+		if err := cl.Patch(ctx, &m, client.Merge); err != nil {
+			return errors.Wrapf(err, "failed to patch provider object")
+		}
+
+		return nil
+	})
+}
+
+func (p *inventoryClient) List(ctx context.Context) (*clusterctlv1.ProviderList, error) {
+	providerList := &clusterctlv1.ProviderList{}
+
+	listProvidersBackoff := newReadBackoff()
+	if err := retryWithExponentialBackoff(ctx, listProvidersBackoff, func(ctx context.Context) error {
+		return listProviders(ctx, p.proxy, providerList)
+	}); err != nil {
+		return nil, err
+	}
+
+	return providerList, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PRIVATE FUNCIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// newInventoryClient returns a inventoryClient.
+func newInventoryClient(proxy Proxy, pollImmediateWaiter PollImmediateWaiter) *inventoryClient {
+	return &inventoryClient{
+		proxy:               proxy,
+		pollImmediateWaiter: pollImmediateWaiter,
+	}
+}
+
+// checkInventoryCRDs checks if the inventory CRDs are installed in the cluster.
+func checkInventoryCRDs(ctx context.Context, proxy Proxy) (bool, error) {
+	c, err := proxy.NewClient(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	if err := c.Get(ctx, client.ObjectKey{Name: fmt.Sprintf("providers.%s", clusterctlv1.GroupVersion.Group)}, crd); err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "failed to check if the clusterctl inventory CRD exists")
+	}
+
+	for _, version := range crd.Spec.Versions {
+		if version.Name == clusterctlv1.GroupVersion.Version {
+			return true, nil
+		}
+	}
+	return true, errors.Errorf("clusterctl inventory CRD does not defines the %s version", clusterctlv1.GroupVersion.Version)
+}
+
+// listProviders retrieves the list of provider inventory objects.
+func listProviders(ctx context.Context, proxy Proxy, providerList *clusterctlv1.ProviderList) error {
+	cl, err := proxy.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := cl.List(ctx, providerList); err != nil {
+		return errors.Wrap(err, "failed get providers")
+	}
 	return nil
 }
