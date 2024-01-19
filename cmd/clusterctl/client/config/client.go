@@ -22,6 +22,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ensure configClient implements Client.
+var _ Client = &configClient{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// **************************************************************************************************** interface.Client
+
 // Client is used to interact with the clusterctl configurations.
 // Clusterctl v2 handles the following configurations:
 // 1. The cert manager configuration (URL of the repository)
@@ -42,13 +55,35 @@ type Client interface {
 	ImageMeta() ImageMetaClient
 }
 
+// **************************************************************************************************** interface.Reader
+
+// Reader define the behaviours of a configuration reader.
+type Reader interface {
+	// Init allows to initialize the configuration reader.
+	Init(ctx context.Context, path string) error
+
+	// Get returns a configuration value of type string.
+	// In case the configuration value does not exists, it returns an error.
+	Get(key string) (string, error)
+
+	// Set allows to set an explicit override for a config value.
+	// e.g. It is used to set an override from a flag value over environment/config file variables.
+	Set(key, value string)
+
+	// UnmarshalKey reads a configuration value and unmarshals it into the provided value object.
+	UnmarshalKey(key string, value interface{}) error
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                       STRUCTS                                                      //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ************************************************************************************************* struct.configClient
+
 // configClient implements Client.
 type configClient struct {
 	reader Reader
 }
-
-// ensure configClient implements Client.
-var _ Client = &configClient{}
 
 func (c *configClient) CertManager() CertManagerClient {
 	return newCertManagerClient(c.reader)
@@ -66,8 +101,16 @@ func (c *configClient) ImageMeta() ImageMetaClient {
 	return newImageMetaClient(c.reader)
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      FACTORIES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Option is a configuration option supplied to New.
 type Option func(*configClient)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InjectReader allows to override the default configuration reader used by clusterctl.
 func InjectReader(reader Reader) Option {
@@ -80,6 +123,10 @@ func InjectReader(reader Reader) Option {
 func New(ctx context.Context, path string, options ...Option) (Client, error) {
 	return newConfigClient(ctx, path, options...)
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func newConfigClient(ctx context.Context, path string, options ...Option) (*configClient, error) {
 	client := &configClient{}
@@ -99,21 +146,4 @@ func newConfigClient(ctx context.Context, path string, options ...Option) (*conf
 	}
 
 	return client, nil
-}
-
-// Reader define the behaviours of a configuration reader.
-type Reader interface {
-	// Init allows to initialize the configuration reader.
-	Init(ctx context.Context, path string) error
-
-	// Get returns a configuration value of type string.
-	// In case the configuration value does not exists, it returns an error.
-	Get(key string) (string, error)
-
-	// Set allows to set an explicit override for a config value.
-	// e.g. It is used to set an override from a flag value over environment/config file variables.
-	Set(key, value string)
-
-	// UnmarshalKey reads a configuration value and unmarshals it into the provided value object.
-	UnmarshalKey(key string, value interface{}) error
 }

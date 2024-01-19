@@ -49,7 +49,7 @@ const (
 const indentation = `  `
 
 var (
-	cfgFile   string
+	cfgFile   string // the file path of the configFile used to boot Cluster-API
 	verbosity *int
 )
 
