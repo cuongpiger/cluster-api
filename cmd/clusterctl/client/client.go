@@ -27,6 +27,19 @@ import (
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/tree"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Ensure clusterctlClient implements Client.
+var _ Client = &clusterctlClient{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// **************************************************************************************************** interface.Client
+
 // Client is exposes the clusterctl high-level client library.
 type Client interface {
 	// GetProvidersConfig returns the list of providers configured for this instance of clusterctl.
@@ -76,6 +89,8 @@ type Client interface {
 	AlphaClient
 }
 
+// *********************************************************************************************** interface.AlphaClient
+
 // AlphaClient exposes the alpha features in clusterctl high-level client library.
 type AlphaClient interface {
 	// RolloutRestart provides rollout restart of cluster-api resources
@@ -90,8 +105,9 @@ type AlphaClient interface {
 	TopologyPlan(ctx context.Context, options TopologyPlanOptions) (*TopologyPlanOutput, error)
 }
 
-// YamlPrinter exposes methods that prints the processed template and
-// variables.
+// *********************************************************************************************** interface.YamlPrinter
+
+// YamlPrinter exposes methods that prints the processed template and variables.
 type YamlPrinter interface {
 	// Variables required by the template.
 	Variables() []string
@@ -99,6 +115,28 @@ type YamlPrinter interface {
 	// Yaml returns yaml defining all the cluster template objects as a byte array.
 	Yaml() ([]byte, error)
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                       STRUCTS                                                      //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ********************************************************************************* struct.RepositoryClientFactoryInput
+
+// RepositoryClientFactoryInput represents the inputs required by the factory.
+type RepositoryClientFactoryInput struct {
+	Provider  Provider
+	Processor Processor
+}
+
+// ************************************************************************************ struct.ClusterClientFactoryInput
+
+// ClusterClientFactoryInput represents the inputs required by the factory.
+type ClusterClientFactoryInput struct {
+	Kubeconfig Kubeconfig
+	Processor  Processor
+}
+
+// ********************************************************************************************* struct.clusterctlClient
 
 // clusterctlClient implements Client.
 type clusterctlClient struct {
@@ -108,29 +146,27 @@ type clusterctlClient struct {
 	alphaClient             alpha.Client
 }
 
-// RepositoryClientFactoryInput represents the inputs required by the factory.
-type RepositoryClientFactoryInput struct {
-	Provider  Provider
-	Processor Processor
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      FACTORIES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // RepositoryClientFactory is a factory of repository.Client from a given input.
 type RepositoryClientFactory func(context.Context, RepositoryClientFactoryInput) (repository.Client, error)
 
-// ClusterClientFactoryInput represents the inputs required by the factory.
-type ClusterClientFactoryInput struct {
-	Kubeconfig Kubeconfig
-	Processor  Processor
-}
-
 // ClusterClientFactory is a factory of cluster.Client from a given input.
 type ClusterClientFactory func(ClusterClientFactoryInput) (cluster.Client, error)
 
-// Ensure clusterctlClient implements Client.
-var _ Client = &clusterctlClient{}
-
 // Option is a configuration option supplied to New.
 type Option func(*clusterctlClient)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// New returns a configClient.
+func New(ctx context.Context, path string, options ...Option) (Client, error) {
+	return newClusterctlClient(ctx, path, options...)
+}
 
 // InjectConfig allows to override the default configuration client used by clusterctl.
 func InjectConfig(config config.Client) Option {
@@ -155,10 +191,9 @@ func InjectClusterClientFactory(factory ClusterClientFactory) Option {
 	}
 }
 
-// New returns a configClient.
-func New(ctx context.Context, path string, options ...Option) (Client, error) {
-	return newClusterctlClient(ctx, path, options...)
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func newClusterctlClient(ctx context.Context, path string, options ...Option) (*clusterctlClient, error) {
 	client := &clusterctlClient{}

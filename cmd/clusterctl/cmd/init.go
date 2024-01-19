@@ -133,7 +133,9 @@ func init() {
 	RootCmd.AddCommand(initCmd)
 }
 
+// runInit implements the 'clusterctl init' command logic.
 func runInit() error {
+	// Get the context
 	ctx := context.Background()
 
 	c, err := client.New(ctx, cfgFile)
