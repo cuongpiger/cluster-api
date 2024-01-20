@@ -25,6 +25,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"strings"
 	"time"
 
@@ -35,11 +36,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 	"sigs.k8s.io/cluster-api/internal/goproxy"
 )
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const (
 	httpsScheme                    = "https"
@@ -61,6 +65,18 @@ var (
 	retryableOperationTimeout  = 1 * time.Minute
 )
 
+var _ Repository = &gitHubRepository{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     FACTORIES                                                      //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type githubRepositoryOption func(*gitHubRepository)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // gitHubRepository provides support for providers hosted on GitHub.
 //
 // We support GitHub repositories that use the release feature to publish artifacts and versions.
@@ -77,22 +93,6 @@ type gitHubRepository struct {
 	componentsPath           string
 	injectClient             *github.Client
 	injectGoproxyClient      *goproxy.Client
-}
-
-var _ Repository = &gitHubRepository{}
-
-type githubRepositoryOption func(*gitHubRepository)
-
-func injectGithubClient(c *github.Client) githubRepositoryOption {
-	return func(g *gitHubRepository) {
-		g.injectClient = c
-	}
-}
-
-func injectGoproxyClient(c *goproxy.Client) githubRepositoryOption {
-	return func(g *gitHubRepository) {
-		g.injectGoproxyClient = c
-	}
 }
 
 // DefaultVersion returns defaultVersion field of gitHubRepository struct.
@@ -197,77 +197,17 @@ func (g *gitHubRepository) GetFile(ctx context.Context, version, path string) ([
 	return files, nil
 }
 
-// NewGitHubRepository returns a gitHubRepository implementation.
-func NewGitHubRepository(ctx context.Context, providerConfig config.Provider, configVariablesClient config.VariablesClient, opts ...githubRepositoryOption) (Repository, error) {
-	if configVariablesClient == nil {
-		return nil, errors.New("invalid arguments: configVariablesClient can't be nil")
+// handleGithubErr wraps error messages.
+func (g *gitHubRepository) handleGithubErr(err error, message string, args ...interface{}) error {
+	if _, ok := err.(*github.RateLimitError); ok {
+		return errors.New("rate limit for github api has been reached. Please wait one hour or get a personal API token and assign it to the GITHUB_TOKEN environment variable")
 	}
-
-	rURL, err := url.Parse(providerConfig.URL())
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid url")
-	}
-
-	// Check if the url is a github repository
-	if rURL.Scheme != httpsScheme || rURL.Host != githubDomain {
-		return nil, errors.New("invalid url: a GitHub repository url should start with https://github.com")
-	}
-
-	// Check if the path is in the expected format,
-	// url's path has an extra leading slash at the end which we need to clean up before splitting.
-	urlSplit := strings.Split(strings.TrimPrefix(rURL.Path, "/"), "/")
-	if len(urlSplit) < 5 || urlSplit[2] != githubReleaseRepository {
-		return nil, errors.Errorf(
-			"invalid url: a GitHub repository url should be in the form https://github.com/{owner}/{Repository}/%s/{latest|version-tag}/{componentsClient.yaml}",
-			githubReleaseRepository,
-		)
-	}
-
-	// Extract all the info from url split.
-	owner := urlSplit[0]
-	repository := urlSplit[1]
-	defaultVersion := urlSplit[3]
-	path := strings.Join(urlSplit[4:], "/")
-
-	// Use path's directory as a rootPath.
-	rootPath := filepath.Dir(path)
-	// Use the file name (if any) as componentsPath.
-	componentsPath := getComponentsPath(path, rootPath)
-
-	repo := &gitHubRepository{
-		providerConfig:        providerConfig,
-		configVariablesClient: configVariablesClient,
-		owner:                 owner,
-		repository:            repository,
-		defaultVersion:        defaultVersion,
-		rootPath:              rootPath,
-		componentsPath:        componentsPath,
-	}
-
-	// Process githubRepositoryOptions.
-	for _, o := range opts {
-		o(repo)
-	}
-
-	if token, err := configVariablesClient.Get(config.GitHubTokenVariable); err == nil {
-		repo.setClientToken(ctx, token)
-	}
-
-	if defaultVersion == githubLatestReleaseLabel {
-		repo.defaultVersion, err = latestContractRelease(ctx, repo, clusterv1.GroupVersion.Version)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get latest release")
+	if ghErr, ok := err.(*github.ErrorResponse); ok {
+		if ghErr.Response.StatusCode == http.StatusNotFound {
+			return errNotFound
 		}
 	}
-
-	return repo, nil
-}
-
-// getComponentsPath returns the file name.
-func getComponentsPath(path string, rootPath string) string {
-	filePath := strings.TrimPrefix(path, rootPath)
-	componentsPath := strings.TrimPrefix(filePath, "/")
-	return componentsPath
+	return errors.Wrapf(err, message, args...)
 }
 
 // getClient returns a github API client.
@@ -492,15 +432,95 @@ func (g *gitHubRepository) downloadFilesFromRelease(ctx context.Context, release
 	return content, nil
 }
 
-// handleGithubErr wraps error messages.
-func (g *gitHubRepository) handleGithubErr(err error, message string, args ...interface{}) error {
-	if _, ok := err.(*github.RateLimitError); ok {
-		return errors.New("rate limit for github api has been reached. Please wait one hour or get a personal API token and assign it to the GITHUB_TOKEN environment variable")
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// NewGitHubRepository returns a gitHubRepository implementation.
+func NewGitHubRepository(ctx context.Context, providerConfig config.Provider, configVariablesClient config.VariablesClient, opts ...githubRepositoryOption) (Repository, error) {
+	if configVariablesClient == nil {
+		return nil, errors.New("invalid arguments: configVariablesClient can't be nil")
 	}
-	if ghErr, ok := err.(*github.ErrorResponse); ok {
-		if ghErr.Response.StatusCode == http.StatusNotFound {
-			return errNotFound
+
+	rURL, err := url.Parse(providerConfig.URL())
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid url")
+	}
+
+	// Check if the url is a github repository
+	if rURL.Scheme != httpsScheme || rURL.Host != githubDomain {
+		return nil, errors.New("invalid url: a GitHub repository url should start with https://github.com")
+	}
+
+	// Check if the path is in the expected format,
+	// url's path has an extra leading slash at the end which we need to clean up before splitting.
+	urlSplit := strings.Split(strings.TrimPrefix(rURL.Path, "/"), "/")
+	if len(urlSplit) < 5 || urlSplit[2] != githubReleaseRepository {
+		return nil, errors.Errorf(
+			"invalid url: a GitHub repository url should be in the form https://github.com/{owner}/{Repository}/%s/{latest|version-tag}/{componentsClient.yaml}",
+			githubReleaseRepository,
+		)
+	}
+
+	// Extract all the info from url split.
+	owner := urlSplit[0]
+	repository := urlSplit[1]
+	defaultVersion := urlSplit[3]
+	path := strings.Join(urlSplit[4:], "/")
+
+	// Use path's directory as a rootPath.
+	rootPath := filepath.Dir(path)
+	// Use the file name (if any) as componentsPath.
+	componentsPath := getComponentsPath(path, rootPath)
+
+	repo := &gitHubRepository{
+		providerConfig:        providerConfig,
+		configVariablesClient: configVariablesClient,
+		owner:                 owner,
+		repository:            repository,
+		defaultVersion:        defaultVersion,
+		rootPath:              rootPath,
+		componentsPath:        componentsPath,
+	}
+
+	// Process githubRepositoryOptions.
+	for _, o := range opts {
+		o(repo)
+	}
+
+	if token, err := configVariablesClient.Get(config.GitHubTokenVariable); err == nil {
+		repo.setClientToken(ctx, token)
+	}
+
+	if defaultVersion == githubLatestReleaseLabel {
+		repo.defaultVersion, err = latestContractRelease(ctx, repo, clusterv1.GroupVersion.Version)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get latest release")
 		}
 	}
-	return errors.Wrapf(err, message, args...)
+
+	return repo, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func injectGithubClient(c *github.Client) githubRepositoryOption {
+	return func(g *gitHubRepository) {
+		g.injectClient = c
+	}
+}
+
+func injectGoproxyClient(c *goproxy.Client) githubRepositoryOption {
+	return func(g *gitHubRepository) {
+		g.injectGoproxyClient = c
+	}
+}
+
+// getComponentsPath returns the file name.
+func getComponentsPath(path string, rootPath string) string {
+	filePath := strings.TrimPrefix(path, rootPath)
+	componentsPath := strings.TrimPrefix(filePath, "/")
+	return componentsPath
 }

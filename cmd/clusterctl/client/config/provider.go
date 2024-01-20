@@ -23,6 +23,17 @@ import (
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ensure provider implements provider.
+var _ Provider = &provider{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Provider defines a provider configuration.
 type Provider interface {
 	// Name returns the name of the provider.
@@ -48,15 +59,18 @@ type Provider interface {
 	Less(other Provider) bool
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// ***************************************************************************************************** struct.provider
+
 // provider implements Provider.
 type provider struct {
 	name         string
 	url          string
 	providerType clusterctlv1.ProviderType
 }
-
-// ensure provider implements provider.
-var _ Provider = &provider{}
 
 func (p *provider) Name() string {
 	return p.name
@@ -83,15 +97,6 @@ func (p *provider) Less(other Provider) bool {
 		(p.providerType.Order() == other.Type().Order() && p.name < other.Name())
 }
 
-// NewProvider creates a new Provider with the given input.
-func NewProvider(name string, url string, ttype clusterctlv1.ProviderType) Provider {
-	return &provider{
-		name:         name,
-		url:          url,
-		providerType: ttype,
-	}
-}
-
 func (p provider) MarshalJSON() ([]byte, error) {
 	dir, file := filepath.Split(p.url)
 	j, err := json.Marshal(struct {
@@ -109,4 +114,17 @@ func (p provider) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return j, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  PUBLIC FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// NewProvider creates a new Provider with the given input.
+func NewProvider(name string, url string, ttype clusterctlv1.ProviderType) Provider {
+	return &provider{
+		name:         name,
+		url:          url,
+		providerType: ttype,
+	}
 }
