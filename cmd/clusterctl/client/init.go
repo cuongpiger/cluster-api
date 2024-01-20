@@ -275,6 +275,7 @@ func (c *clusterctlClient) setupInstaller(ctx context.Context, cluster cluster.C
 		}
 	}
 
+	// Set up for the bootstrap provider => ignore this
 	if err := c.addToInstaller(ctx, addOptions, clusterctlv1.BootstrapProviderType, options.BootstrapProviders...); err != nil {
 		return nil, err
 	}
