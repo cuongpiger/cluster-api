@@ -27,6 +27,10 @@ import (
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/repository"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // getComponentsByName is a utility method that returns components
 // for a given provider with options including targetNamespace.
 func (c *clusterctlClient) getComponentsByName(ctx context.Context, provider string, providerType clusterctlv1.ProviderType, options repository.ComponentsOptions) (repository.Components, error) {

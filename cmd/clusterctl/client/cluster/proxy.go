@@ -95,6 +95,7 @@ type Proxy interface {
 //                                                      STRUCTS                                                       //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// ******************************************************************************************************** struct.proxy
 type proxy struct {
 	kubeconfig         Kubeconfig
 	timeout            time.Duration
@@ -171,6 +172,7 @@ func (k *proxy) GetConfig() (*rest.Config, error) {
 	return restConfig, nil
 }
 
+// NewClient returns a new controller runtime Client object for working on the management cluster.
 func (k *proxy) NewClient(ctx context.Context) (client.Client, error) {
 	config, err := k.GetConfig()
 	if err != nil {
