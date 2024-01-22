@@ -24,6 +24,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                  CONSTS/VARIABLES                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const (
 	// CertManagerConfigKey defines the name of the top level config key for cert-manager configuration.
 	CertManagerConfigKey = "cert-manager"
@@ -40,31 +44,37 @@ const (
 	CertManagerDefaultTimeout = 10 * time.Minute
 )
 
+// ensure certManagerClient implements CertManagerClient.
+var _ CertManagerClient = &certManagerClient{}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                     INTERFACES                                                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // CertManagerClient has methods to work with cert-manager configurations.
 type CertManagerClient interface {
 	// Get returns the cert-manager configuration.
 	Get() (CertManager, error)
 }
 
-// certManagerClient implements CertManagerClient.
-type certManagerClient struct {
-	reader Reader
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      STRUCTS                                                       //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// ensure certManagerClient implements CertManagerClient.
-var _ CertManagerClient = &certManagerClient{}
-
-func newCertManagerClient(reader Reader) *certManagerClient {
-	return &certManagerClient{
-		reader: reader,
-	}
-}
+// ******************************************************************************************** struct.configCertManager
 
 // configCertManager mirrors config.CertManager interface and allows serialization of the corresponding info.
 type configCertManager struct {
 	URL     string `json:"url,omitempty"`
 	Version string `json:"version,omitempty"`
 	Timeout string `json:"timeout,omitempty"`
+}
+
+// ******************************************************************************************** struct.certManagerClient
+
+// certManagerClient implements CertManagerClient.
+type certManagerClient struct {
+	reader Reader
 }
 
 func (p *certManagerClient) Get() (CertManager, error) {
@@ -93,4 +103,14 @@ func (p *certManagerClient) Get() (CertManager, error) {
 	}
 
 	return NewCertManager(url, version, timeout), nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                 PRIVATE FUNCTIONS                                                  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func newCertManagerClient(reader Reader) *certManagerClient {
+	return &certManagerClient{
+		reader: reader,
+	}
 }
