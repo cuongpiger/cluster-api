@@ -44,11 +44,12 @@ var initCmd = &cobra.Command{
 		The management cluster must be an existing Kubernetes cluster, make sure
 		to have enough privileges to install the desired components.
 
-		Use 'clusterctl config repositories' to get a list of available providers; if necessary, edit
-		$XDG_CONFIG_HOME/cluster-api/clusterctl.yaml file to add new provider or to customize existing ones.
+		Use 'clusterctl config repositories' to get a list of available providers and their configuration; if
+		necessary, edit $XDG_CONFIG_HOME/cluster-api/clusterctl.yaml file to add new provider or to customize existing ones.
 
 		Some providers require environment variables to be set before running clusterctl init.
-		Refer to the provider documentation, or use 'clusterctl config provider [name]' to get a list of required variables.
+		Refer to the provider documentation, or use 'clusterctl generate provider --infrastructure [name] --describe'
+		to get a list of required variables.
 
 		See https://cluster-api.sigs.k8s.io for more details.`),
 
@@ -117,7 +118,7 @@ func init() {
 	initCmd.PersistentFlags().StringSliceVar(&initOpts.ipamProviders, "ipam", nil,
 		"IPAM providers and versions (e.g. infoblox:v0.0.1) to add to the management cluster.")
 	initCmd.PersistentFlags().StringSliceVar(&initOpts.runtimeExtensionProviders, "runtime-extension", nil,
-		"Runtime extension providers and versions (e.g. test:v0.0.1) to add to the management cluster.")
+		"Runtime extension providers and versions to add to the management cluster; please note that clusterctl doesn't include any default runtime extensions and thus it is required to use custom configuration files to register runtime extensions.")
 	initCmd.PersistentFlags().StringSliceVar(&initOpts.addonProviders, "addon", nil,
 		"Add-on providers and versions (e.g. helm:v0.1.0) to add to the management cluster.")
 	initCmd.Flags().StringVarP(&initOpts.targetNamespace, "target-namespace", "n", "",

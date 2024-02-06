@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 
+	dockercontainer "github.com/docker/docker/api/types/container"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -173,7 +174,7 @@ func Run(ctx context.Context, input RunInput) error {
 	// Get our current working directory. Just for information, so we don't need
 	// to worry about errors at this point.
 	cwd, _ := os.Getwd()
-	ginkgoextensions.Byf("Running e2e test: dir=%s, command=%q", cwd, args)
+	ginkgoextensions.Byf("Running e2e test: dir=%s, command=%q, image=%q", cwd, args, input.ConformanceImage)
 
 	containerRuntime, err := container.NewDockerClient()
 	if err != nil {
@@ -191,7 +192,7 @@ func Run(ctx context.Context, input RunInput) error {
 		CommandArgs:     args,
 		Entrypoint:      []string{"/usr/local/bin/ginkgo"},
 		// We don't want the conformance test container to restart once ginkgo exits.
-		RestartPolicy: "no",
+		RestartPolicy: dockercontainer.RestartPolicyDisabled,
 	}, ginkgo.GinkgoWriter)
 	if err != nil {
 		return errors.Wrap(err, "Unable to run conformance tests")

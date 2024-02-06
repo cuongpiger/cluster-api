@@ -281,7 +281,7 @@ Additional documentation about experimental features can be found in [Experiment
 Depending on the infrastructure provider you are planning to use, some additional prerequisites should be satisfied
 before getting started with Cluster API. See below for the expected settings for common providers.
 
-{{#tabs name:"tab-installation-infrastructure" tabs:"AWS,Azure,CloudStack,DigitalOcean,Docker,Equinix Metal,GCP,Hetzner,IBM Cloud,KubeKey,KubeVirt,Metal3,Nutanix,OCI,OpenStack,Outscale,Proxmox,VCD,vcluster,Virtink,vSphere"}}
+{{#tabs name:"tab-installation-infrastructure" tabs:"AWS,Azure,CloudStack,DigitalOcean,Docker,Equinix Metal,GCP,Hetzner,IBM Cloud,K0smotron,KubeKey,KubeVirt,Metal3,Nutanix,OCI,OpenStack,Outscale,Proxmox,VCD,vcluster,Virtink,vSphere"}}
 {{#tab AWS}}
 
 Download the latest binary of `clusterawsadm` from the [AWS provider releases]. The [clusterawsadm] command line utility assists with identity and access management (IAM) for [Cluster API Provider AWS][capa].
@@ -593,6 +593,14 @@ clusterctl init --infrastructure ibmcloud
 ```
 
 {{#/tab }}
+{{#tab K0smotron}}
+
+```bash
+# Initialize the management cluster
+clusterctl init --infrastructure k0sproject-k0smotron
+```
+
+{{#/tab }}
 {{#tab KubeKey}}
 
 ```bash
@@ -700,7 +708,8 @@ clusterctl init --infrastructure outscale
 
 {{#tab Proxmox}}
 
-First, we need to add the IPAM provider to your clusterctl config file `~/.cluster-api/clusterctl.yaml`:
+First, we need to add the IPAM provider to your [clusterctl config file](../clusterctl/configuration.md) (`$XDG_CONFIG_HOME/cluster-api/clusterctl.yaml`):
+
 ```yaml
 providers:
   - name: in-cluster
@@ -842,7 +851,7 @@ before configuring a cluster with Cluster API. Instructions are provided for com
 Otherwise, you can look at the `clusterctl generate cluster` [command][clusterctl generate cluster] documentation for details about how to
 discover the list of variables required by a cluster templates.
 
-{{#tabs name:"tab-configuration-infrastructure" tabs:"AWS,Azure,CloudStack,DigitalOcean,Docker,Equinix Metal,GCP,IBM Cloud,KubeKey,KubeVirt,Metal3,Nutanix,OpenStack,Outscale,Proxmox,VCD,vcluster,Virtink,vSphere"}}
+{{#tabs name:"tab-configuration-infrastructure" tabs:"AWS,Azure,CloudStack,DigitalOcean,Docker,Equinix Metal,GCP,IBM Cloud,K0smotron,KubeKey,KubeVirt,Metal3,Nutanix,OpenStack,Outscale,Proxmox,VCD,vcluster,Virtink,vSphere"}}
 {{#tab AWS}}
 
 ```bash
@@ -1040,6 +1049,11 @@ export IBMPOWERVS_NETWORK_NAME=<your-capi-network-name>
 ```
 
 Please visit the [IBM Cloud provider] for more information.
+
+{{#/tab }}
+{{#tab K0smotron}}
+
+Please visit the [K0smotron provider] for more information.
 
 {{#/tab }}
 {{#tab KubeKey}}
@@ -1278,7 +1292,7 @@ For more information about prerequisites, credentials management, or permissions
 
 For the purpose of this tutorial, we'll name our cluster capi-quickstart.
 
-{{#tabs name:"tab-clusterctl-config-cluster" tabs:"Docker, vcluster, KubeVirt, others..."}}
+{{#tabs name:"tab-clusterctl-config-cluster" tabs:"Docker, vcluster, KubeVirt, Other providers..."}}
 {{#tab Docker}}
 
 <aside class="note warning">
@@ -1330,7 +1344,7 @@ clusterctl generate cluster capi-quickstart \
 ```
 
 {{#/tab }}
-{{#tab others...}}
+{{#tab Other providers...}}
 
 ```bash
 clusterctl generate cluster capi-quickstart \
@@ -1463,7 +1477,7 @@ For more information, see the [CAPZ book](https://capz.sigs.k8s.io/topics/addons
 
 Calico is used here as an example.
 
-{{#tabs name:"tab-deploy-cni" tabs:"Azure,vcluster,KubeVirt,others..."}}
+{{#tabs name:"tab-deploy-cni" tabs:"Azure,vcluster,KubeVirt,Other providers..."}}
 {{#tab Azure}}
 
 Install the official Calico Helm chart on the workload cluster:
@@ -1606,7 +1620,7 @@ kube-scheduler-capi-quickstart-control-plane-kjjbb            1/1     Running   
 </aside>
 
 {{#/tab }}
-{{#tab others...}}
+{{#tab Other providers...}}
 
 ```bash
 kubectl --kubeconfig=./capi-quickstart.kubeconfig \
@@ -1678,6 +1692,7 @@ kind delete cluster
 [management cluster]: ../reference/glossary.md#management-cluster
 [Metal3 getting started guide]: https://github.com/metal3-io/cluster-api-provider-metal3/blob/master/docs/getting-started.md
 [Metal3 provider]: https://github.com/metal3-io/cluster-api-provider-metal3/
+[K0smotron provider]: https://github.com/k0sproject/k0smotron
 [KubeKey provider]: https://github.com/kubesphere/kubekey
 [KubeVirt provider]: https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt/
 [KubeVirt]: https://kubevirt.io/

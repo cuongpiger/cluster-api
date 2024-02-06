@@ -229,6 +229,9 @@ providers:
   versions:
     - name: v1.7.99 # next; use manifest from source files
       value: ../../../test/extension/config/default
+      replacements:
+      - old: "--leader-elect"
+        new: "--leader-elect\n        - --logging-format=json"
       files:
       - sourcePath: "../data/shared/main/metadata.yaml"
 
@@ -241,6 +244,7 @@ variables:
   KUBERNETES_VERSION: "v1.29.0"
   KUBERNETES_VERSION_UPGRADE_FROM: "v1.28.0"
   KUBERNETES_VERSION_UPGRADE_TO: "v1.29.0"
+  KUBERNETES_VERSION_LATEST_CI: "ci/latest-1.30"
   ETCD_VERSION_UPGRADE_TO: "3.5.10-0"
   COREDNS_VERSION_UPGRADE_TO: "v1.11.1"
   DOCKER_SERVICE_DOMAIN: "cluster.local"

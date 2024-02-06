@@ -14,12 +14,12 @@ aliases:
   # active folks who can be contacted to perform admin-related
   # tasks on the repo, or otherwise approve any PRS.
   cluster-api-admins:
-  - CecileRobertMichon
+  - fabriziopandini
   - vincepri
 
   # non-admin folks who have write-access and can approve any PRs in the repo
   cluster-api-maintainers:
-  - CecileRobertMichon
+  - chrischdi
   - enxebre
   - fabriziopandini
   - killianmuldoon
@@ -28,12 +28,10 @@ aliases:
 
   # folks who can review and LGTM any PRs in the repo
   cluster-api-reviewers:
-  - chrischdi
   - jackfrancis
   - JoelSpeed
   - richardcase
   - stmcginnis
-  - ykakarap
 
   # -----------------------------------------------------------
   # OWNER_ALIASES for controllers/topology
@@ -73,7 +71,6 @@ aliases:
   # -----------------------------------------------------------
 
   cluster-api-clusterctl-maintainers:
-  - ykakarap
   cluster-api-clusterctl-reviewers:
   - Jont828
 
