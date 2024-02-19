@@ -53,6 +53,7 @@ const (
 	NutanixProviderName        = "nutanix"
 	OCIProviderName            = "oci"
 	OpenStackProviderName      = "openstack"
+	VngCloudProviderName       = "vngcloud"
 	PacketProviderName         = "packet"
 	SideroProviderName         = "sidero"
 	VCloudDirectorProviderName = "vcd"
@@ -194,6 +195,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         OpenStackProviderName,
 			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-openstack/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         VngCloudProviderName,
+			url:          "https://github.com/cuongpiger/cluster-api-provider-vngcloud/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
