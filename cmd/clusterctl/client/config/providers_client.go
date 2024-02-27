@@ -86,6 +86,7 @@ const (
 	OracleCloudNativeControlPlaneProviderName = "ocne"
 	KubeKeyK3sControlPlaneProviderName        = "kubekey-k3s"
 	KamajiControlPlaneProviderName            = "kamaji"
+	VngCloudControlPlaneProviderName          = "vngcloud"
 	RKE2ControlPlaneProviderName              = "rke2"
 )
 
@@ -199,7 +200,7 @@ func (p *providersClient) defaults() []Provider {
 		},
 		&provider{
 			name:         VngCloudProviderName,
-			url:          "https://github.com/cuongpiger/cluster-api-provider-vngcloud/releases/latest/infrastructure-components.yaml",
+			url:          "https://github.com/cuongpiger/cluster-api-provider-vngcloud-manifest/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
@@ -349,6 +350,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         KamajiControlPlaneProviderName,
 			url:          "https://github.com/clastix/cluster-api-control-plane-provider-kamaji/releases/latest/control-plane-components.yaml",
+			providerType: clusterctlv1.ControlPlaneProviderType,
+		},
+		&provider{
+			name:         VngCloudControlPlaneProviderName,
+			url:          "https://github.com/cuongpiger/cluster-api-control-plane-vngcloud-manifest/releases/latest/control-plane-components.yaml",
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 		&provider{
