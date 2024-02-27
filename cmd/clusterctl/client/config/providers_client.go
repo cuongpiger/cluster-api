@@ -137,7 +137,7 @@ func (p *providersClient) defaults() []Provider {
 		// cluster API core provider
 		&provider{
 			name:         ClusterAPIProviderName,
-			url:          "https://github.com/kubernetes-sigs/cluster-api/releases/latest/core-components.yaml",
+			url:          "https://github.com/cuongpiger/cluster-api-manifest/releases/latest/core-components.yaml",
 			providerType: clusterctlv1.CoreProviderType,
 		},
 
@@ -287,7 +287,7 @@ func (p *providersClient) defaults() []Provider {
 		// Bootstrap providers
 		&provider{
 			name:         KubeadmBootstrapProviderName,
-			url:          "https://github.com/kubernetes-sigs/cluster-api/releases/latest/bootstrap-components.yaml",
+			url:          "https://github.com/cuongpiger/cluster-api-manifest/releases/latest/bootstrap-components.yaml",
 			providerType: clusterctlv1.BootstrapProviderType,
 		},
 		&provider{
