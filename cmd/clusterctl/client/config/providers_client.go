@@ -143,8 +143,9 @@ func (p *providersClient) defaults() []Provider {
 
 		// Infrastructure providers
 		&provider{
-			name:         AWSProviderName,
-			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/latest/infrastructure-components.yaml",
+			name: AWSProviderName,
+			url: ":wq" +
+				"/cluster-api-provider-aws/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
