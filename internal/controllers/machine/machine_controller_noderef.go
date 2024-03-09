@@ -290,7 +290,9 @@ func (r *Reconciler) patchNode(ctx context.Context, remoteClient client.Client, 
 	annotations.AddAnnotations(newNode, map[string]string{clusterv1.LabelsFromMachineAnnotation: strings.Join(labelsFromCurrentReconcile, ",")})
 
 	// Drop the NodeUninitializedTaint taint on the node given that we are reconciling labels.
-	hasTaintChanges := taints.RemoveNodeTaint(newNode, clusterv1.NodeUninitializedTaint)
+	hasTaintChanges := taints.RemoveNodeTaint(newNode, clusterv1.NodeUninitializedTaint) || taints.RemoveNodeTaint(newNode, clusterv1.CloudProviderUninitializedTaint)
+
+	// Drop the CloudProviderUninitializedTaint taint on the node given that we are reconciling labels.
 
 	if !hasAnnotationChanges && !hasLabelChanges && !hasTaintChanges {
 		return nil
