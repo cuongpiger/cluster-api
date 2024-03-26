@@ -184,7 +184,7 @@ def load_provider_tiltfiles():
 
 tilt_helper_dockerfile_header = """
 # Tilt image
-FROM golang:1.21.5 as tilt-helper
+FROM golang:1.21.8 as tilt-helper
 # Install delve. Note this should be kept in step with the Go release minor version.
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.21
 # Support live reloading with Tilt
@@ -195,7 +195,7 @@ RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com
 """
 
 tilt_dockerfile_header = """
-FROM golang:1.21.5 as tilt
+FROM golang:1.21.8 as tilt
 WORKDIR /
 COPY --from=tilt-helper /process.txt .
 COPY --from=tilt-helper /start.sh .
@@ -366,7 +366,7 @@ def enable_provider(name, debug):
         k8s_yaml(p.get("context") + "/" + resource)
         additional_objs = additional_objs + decode_yaml_stream(read_file(p.get("context") + "/" + resource))
 
-    if p.get("apply_provider_yaml", True):
+    if p.get("kustomize_config", True):
         yaml = read_file("./.tiltbuild/yaml/{}.provider.yaml".format(name))
         k8s_yaml(yaml, allow_duplicates = True)
         objs = decode_yaml_stream(yaml)
@@ -541,14 +541,11 @@ def deploy_templates(filename, label, substitutions):
     basename = os.path.basename(filename)
     if basename.endswith(".yaml"):
         if basename.startswith("clusterclass-"):
-            clusterclass_name = basename.replace("clusterclass-", "").replace(".yaml", "")
-            deploy_clusterclass(clusterclass_name, label, filename, substitutions)
+            template_name = basename.replace("clusterclass-", "").replace(".yaml", "")
+            deploy_clusterclass(template_name, label, filename, substitutions)
         elif basename.startswith("cluster-template-"):
-            template_name = basename.replace("cluster-template-", "").replace(".yaml", "")
-            deploy_cluster_template(template_name, label, filename, substitutions)
-        elif basename == "cluster-template.yaml":
-            template_name = "default"
-            deploy_cluster_template(template_name, label, filename, substitutions)
+            clusterclass_name = basename.replace("cluster-template-", "").replace(".yaml", "")
+            deploy_cluster_template(clusterclass_name, label, filename, substitutions)
 
 def deploy_clusterclass(clusterclass_name, label, filename, substitutions):
     apply_clusterclass_cmd = "cat " + filename + " | " + envsubst_cmd + " | " + kubectl_cmd + " apply --namespace=$NAMESPACE -f - && echo \"ClusterClass created from\'" + filename + "\', don't forget to delete\n\""

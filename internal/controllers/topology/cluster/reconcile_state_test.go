@@ -34,7 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
@@ -174,10 +174,10 @@ func TestReconcileShim(t *testing.T) {
 
 		// Add the shim as a temporary owner for the InfrastructureCluster and ControlPlane.
 		ownerRefs := s.Current.InfrastructureCluster.GetOwnerReferences()
-		ownerRefs = append(ownerRefs, *ownerReferenceTo(cluster1Shim, corev1.SchemeGroupVersion.WithKind("Secret")))
+		ownerRefs = append(ownerRefs, *ownerReferenceTo(cluster1Shim))
 		s.Current.InfrastructureCluster.SetOwnerReferences(ownerRefs)
 		ownerRefs = s.Current.ControlPlane.Object.GetOwnerReferences()
-		ownerRefs = append(ownerRefs, *ownerReferenceTo(cluster1Shim, corev1.SchemeGroupVersion.WithKind("Secret")))
+		ownerRefs = append(ownerRefs, *ownerReferenceTo(cluster1Shim))
 		s.Current.ControlPlane.Object.SetOwnerReferences(ownerRefs)
 
 		// Pre-create a shim
@@ -221,14 +221,14 @@ func TestReconcileShim(t *testing.T) {
 		ownerRefs := s.Current.InfrastructureCluster.GetOwnerReferences()
 		ownerRefs = append(
 			ownerRefs,
-			*ownerReferenceTo(cluster1Shim, corev1.SchemeGroupVersion.WithKind("Secret")),
-			*ownerReferenceTo(cluster1, clusterv1.GroupVersion.WithKind("Cluster")))
+			*ownerReferenceTo(cluster1Shim),
+			*ownerReferenceTo(cluster1))
 		s.Current.InfrastructureCluster.SetOwnerReferences(ownerRefs)
 		ownerRefs = s.Current.ControlPlane.Object.GetOwnerReferences()
 		ownerRefs = append(
 			ownerRefs,
-			*ownerReferenceTo(cluster1Shim, corev1.SchemeGroupVersion.WithKind("Secret")),
-			*ownerReferenceTo(cluster1, clusterv1.GroupVersion.WithKind("Cluster")))
+			*ownerReferenceTo(cluster1Shim),
+			*ownerReferenceTo(cluster1))
 		s.Current.ControlPlane.Object.SetOwnerReferences(ownerRefs)
 
 		// Pre-create a shim
@@ -269,10 +269,10 @@ func TestReconcileShim(t *testing.T) {
 
 		// Add the cluster as a final owner for the InfrastructureCluster and ControlPlane (reconciled).
 		ownerRefs := s.Current.InfrastructureCluster.GetOwnerReferences()
-		ownerRefs = append(ownerRefs, *ownerReferenceTo(cluster1, clusterv1.GroupVersion.WithKind("Cluster")))
+		ownerRefs = append(ownerRefs, *ownerReferenceTo(cluster1))
 		s.Current.InfrastructureCluster.SetOwnerReferences(ownerRefs)
 		ownerRefs = s.Current.ControlPlane.Object.GetOwnerReferences()
-		ownerRefs = append(ownerRefs, *ownerReferenceTo(cluster1, clusterv1.GroupVersion.WithKind("Cluster")))
+		ownerRefs = append(ownerRefs, *ownerReferenceTo(cluster1))
 		s.Current.ControlPlane.Object.SetOwnerReferences(ownerRefs)
 
 		// Run reconcileClusterShim using a nil client, so an error will be triggered if any operation is attempted
@@ -515,7 +515,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -545,7 +545,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -582,7 +582,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -619,7 +619,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -656,7 +656,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -693,7 +693,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -731,7 +731,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -769,7 +769,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -806,7 +806,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -843,7 +843,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -880,7 +880,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -917,7 +917,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -955,7 +955,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -993,7 +993,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -1030,7 +1030,7 @@ func TestReconcile_callAfterClusterUpgrade(t *testing.T) {
 				Blueprint: &scope.ClusterBlueprint{
 					Topology: &clusterv1.Topology{
 						ControlPlane: clusterv1.ControlPlaneTopology{
-							Replicas: ptr.To[int32](2),
+							Replicas: pointer.Int32(2),
 						},
 					},
 				},
@@ -3241,8 +3241,9 @@ func newFakeMachineDeploymentTopologyState(name string, infrastructureMachineTem
 
 	scheme := runtime.NewScheme()
 	_ = clusterv1.AddToScheme(scheme)
-	if err := (&webhooks.MachineDeployment{}).
-		Default(admission.NewContextWithRequest(ctx, admission.Request{}), mdState.Object); err != nil {
+	if err := (&webhooks.MachineDeployment{
+		Decoder: admission.NewDecoder(scheme),
+	}).Default(admission.NewContextWithRequest(ctx, admission.Request{}), mdState.Object); err != nil {
 		panic(err)
 	}
 	return mdState

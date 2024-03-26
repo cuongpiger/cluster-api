@@ -28,7 +28,6 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -37,7 +36,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -46,7 +44,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/kustomize/api/types"
 
@@ -71,28 +69,28 @@ const (
 
 var (
 	// Defines the default version to be used for the provider CR if no version is specified in the tilt-provider.yaml|json file.
-	defaultProviderVersion = "v1.7.99"
+	defaultProviderVersion = "v1.6.99"
 
 	// This data struct mirrors a subset of info from the providers struct in the tilt file
 	// which is containing "hard-coded" tilt-provider.yaml files for the providers managed in the Cluster API repository.
 	providers = map[string]tiltProviderConfig{
 		"core": {
-			Context: ptr.To("."),
+			Context: pointer.String("."),
 		},
 		"kubeadm-bootstrap": {
-			Context: ptr.To("bootstrap/kubeadm"),
+			Context: pointer.String("bootstrap/kubeadm"),
 		},
 		"kubeadm-control-plane": {
-			Context: ptr.To("controlplane/kubeadm"),
+			Context: pointer.String("controlplane/kubeadm"),
 		},
 		"docker": {
-			Context: ptr.To("test/infrastructure/docker"),
+			Context: pointer.String("test/infrastructure/docker"),
 		},
 		"in-memory": {
-			Context: ptr.To("test/infrastructure/inmemory"),
+			Context: pointer.String("test/infrastructure/inmemory"),
 		},
 		"test-extension": {
-			Context: ptr.To("test/extension"),
+			Context: pointer.String("test/extension"),
 		},
 	}
 
@@ -131,11 +129,8 @@ type tiltProvider struct {
 }
 
 type tiltProviderConfig struct {
-	Context           *string  `json:"context,omitempty"`
-	Version           *string  `json:"version,omitempty"`
-	ApplyProviderYaml *bool    `json:"apply_provider_yaml,omitempty"`
-	KustomizeFolder   *string  `json:"kustomize_folder,omitempty"`
-	KustomizeOptions  []string `json:"kustomize_options,omitempty"`
+	Context *string `json:"context,omitempty"`
+	Version *string `json:"version,omitempty"`
 }
 
 func init() {
@@ -157,7 +152,7 @@ func init() {
 func main() {
 	// Set clusterctl logger with a log level of 5.
 	// This makes it easier to see what clusterctl is doing and to debug it.
-	logf.SetLogger(logf.NewLogger(logf.WithThreshold(ptr.To(5))))
+	logf.SetLogger(logf.NewLogger(logf.WithThreshold(pointer.Int(5))))
 
 	// Set controller-runtime logger as well.
 	ctrl.SetLogger(klog.Background())
@@ -217,19 +212,19 @@ func readTiltSettings(path string) (*tiltSettings, error) {
 // setTiltSettingsDefaults sets default values for tiltSettings info.
 func setTiltSettingsDefaults(ts *tiltSettings) {
 	if ts.DeployCertManager == nil {
-		ts.DeployCertManager = ptr.To(true)
+		ts.DeployCertManager = pointer.Bool(true)
 	}
 
 	for k := range ts.Debug {
 		p := ts.Debug[k]
 		if p.Continue == nil {
-			p.Continue = ptr.To(true)
+			p.Continue = pointer.Bool(true)
 		}
 		if p.Port == nil {
-			p.Port = ptr.To(0)
+			p.Port = pointer.Int(0)
 		}
 		if p.ProfilerPort == nil {
-			p.ProfilerPort = ptr.To(0)
+			p.ProfilerPort = pointer.Int(0)
 		}
 
 		ts.Debug[k] = p
@@ -344,11 +339,7 @@ func tiltResources(ctx context.Context, ts *tiltSettings) error {
 		if !ok {
 			return errors.Errorf("failed to obtain config for the provider %s, please add the providers path to the provider_repos list in tilt-settings.yaml/json file", providerName)
 		}
-		if ptr.Deref(config.ApplyProviderYaml, true) {
-			kustomizeFolder := path.Join(*config.Context, ptr.Deref(config.KustomizeFolder, "config/default"))
-			kustomizeOptions := config.KustomizeOptions
-			tasks[providerName] = workloadTask(providerName, "provider", "manager", "manager", ts, kustomizeFolder, kustomizeOptions, getProviderObj(config.Version))
-		}
+		tasks[providerName] = workloadTask(providerName, "provider", "manager", "manager", ts, fmt.Sprintf("%s/config/default", *config.Context), getProviderObj(config.Version))
 	}
 
 	return runTaskGroup(ctx, "resources", tasks)
@@ -367,14 +358,11 @@ func loadTiltProvider(providerRepository string) (map[string]tiltProviderConfig,
 		}
 
 		// Resolving context, that is a relative path to the repository where the tilt-provider is defined
-		contextPath := filepath.Join(providerRepository, ptr.Deref(p.Config.Context, "."))
+		contextPath := filepath.Join(providerRepository, pointer.StringDeref(p.Config.Context, "."))
 
 		ret[p.Name] = tiltProviderConfig{
-			Context:           &contextPath,
-			Version:           p.Config.Version,
-			ApplyProviderYaml: p.Config.ApplyProviderYaml,
-			KustomizeFolder:   p.Config.KustomizeFolder,
-			KustomizeOptions:  p.Config.KustomizeOptions,
+			Context: &contextPath,
+			Version: p.Config.Version,
 		}
 	}
 	return ret, nil
@@ -686,12 +674,9 @@ func kustomizeTask(path, out string) taskFunction {
 // workloadTask generates a task for creating the component yaml for a workload and saving the output on a file.
 // NOTE: This task has several sub steps including running kustomize, envsubst, fixing components for debugging,
 // and adding the workload resource mimicking what clusterctl init does.
-func workloadTask(name, workloadType, binaryName, containerName string, ts *tiltSettings, path string, options []string, getAdditionalObject func(string, []unstructured.Unstructured) (*unstructured.Unstructured, error)) taskFunction {
+func workloadTask(name, workloadType, binaryName, containerName string, ts *tiltSettings, path string, getAdditionalObject func(string, []unstructured.Unstructured) (*unstructured.Unstructured, error)) taskFunction {
 	return func(ctx context.Context, prefix string, errCh chan error) {
-		args := []string{"build"}
-		args = append(args, options...)
-		args = append(args, path)
-		kustomizeCmd := exec.CommandContext(ctx, kustomizePath, args...)
+		kustomizeCmd := exec.CommandContext(ctx, kustomizePath, "build", path)
 		var stdout1, stderr1 bytes.Buffer
 		kustomizeCmd.Dir = rootPath
 		kustomizeCmd.Stdout = &stdout1
@@ -838,14 +823,11 @@ func prepareWorkload(name, prefix, binaryName, containerName string, objs []unst
 
 				container.LivenessProbe = nil
 				container.ReadinessProbe = nil
-
-				container.Resources = corev1.ResourceRequirements{}
 			}
 
 			container.Command = cmd
 			container.Args = args
 			deployment.Spec.Template.Spec.Containers[j] = container
-			deployment.Spec.Replicas = ptr.To[int32](1)
 		}
 	})
 }
@@ -947,7 +929,7 @@ func getProviderObj(version *string) func(prefix string, objs []unstructured.Uns
 			},
 			ProviderName: providerName,
 			Type:         providerType,
-			Version:      ptr.Deref(version, defaultProviderVersion),
+			Version:      pointer.StringDeref(version, defaultProviderVersion),
 		}
 
 		providerObj := &unstructured.Unstructured{}

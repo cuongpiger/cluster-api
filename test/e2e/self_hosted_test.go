@@ -21,7 +21,7 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("When testing Cluster API working on self-hosted clusters", func() {
@@ -32,7 +32,7 @@ var _ = Describe("When testing Cluster API working on self-hosted clusters", fun
 			BootstrapClusterProxy:  bootstrapClusterProxy,
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
-			InfrastructureProvider: ptr.To("docker"),
+			InfrastructureProvider: pointer.String("docker"),
 		}
 	})
 })
@@ -46,9 +46,9 @@ var _ = Describe("When testing Cluster API working on self-hosted clusters using
 			ArtifactFolder:           artifactFolder,
 			SkipCleanup:              skipCleanup,
 			Flavor:                   "topology",
-			InfrastructureProvider:   ptr.To("docker"),
-			ControlPlaneMachineCount: ptr.To[int64](1),
-			WorkerMachineCount:       ptr.To[int64](1),
+			InfrastructureProvider:   pointer.String("docker"),
+			ControlPlaneMachineCount: pointer.Int64(1),
+			WorkerMachineCount:       pointer.Int64(1),
 		}
 	})
 })
@@ -62,9 +62,9 @@ var _ = Describe("When testing Cluster API working on self-hosted clusters using
 			ArtifactFolder:           artifactFolder,
 			SkipCleanup:              skipCleanup,
 			Flavor:                   "topology",
-			InfrastructureProvider:   ptr.To("docker"),
-			ControlPlaneMachineCount: ptr.To[int64](3),
-			WorkerMachineCount:       ptr.To[int64](1),
+			InfrastructureProvider:   pointer.String("docker"),
+			ControlPlaneMachineCount: pointer.Int64(3),
+			WorkerMachineCount:       pointer.Int64(1),
 		}
 	})
 })
@@ -78,9 +78,9 @@ var _ = Describe("When testing Cluster API working on single-node self-hosted cl
 			ArtifactFolder:           artifactFolder,
 			SkipCleanup:              skipCleanup,
 			Flavor:                   "topology-single-node-cluster",
-			InfrastructureProvider:   ptr.To("docker"),
-			ControlPlaneMachineCount: ptr.To[int64](1),
-			WorkerMachineCount:       ptr.To[int64](0),
+			InfrastructureProvider:   pointer.String("docker"),
+			ControlPlaneMachineCount: pointer.Int64(1),
+			WorkerMachineCount:       pointer.Int64(0),
 		}
 	})
 })

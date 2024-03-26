@@ -23,7 +23,7 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -42,23 +42,23 @@ func Test_convertToAPIExtensionsJSONSchemaProps(t *testing.T) {
 			schema: &clusterv1.JSONSchemaProps{
 				Type:             "integer",
 				Format:           "uri",
-				MaxLength:        ptr.To[int64](4),
-				MinLength:        ptr.To[int64](2),
+				MaxLength:        pointer.Int64(4),
+				MinLength:        pointer.Int64(2),
 				Pattern:          "abc.*",
-				Maximum:          ptr.To[int64](43),
+				Maximum:          pointer.Int64(43),
 				ExclusiveMaximum: true,
-				Minimum:          ptr.To[int64](1),
+				Minimum:          pointer.Int64(1),
 				ExclusiveMinimum: false,
 			},
 			want: &apiextensions.JSONSchemaProps{
 				Type:             "integer",
 				Format:           "uri",
-				MaxLength:        ptr.To[int64](4),
-				MinLength:        ptr.To[int64](2),
+				MaxLength:        pointer.Int64(4),
+				MinLength:        pointer.Int64(2),
 				Pattern:          "abc.*",
-				Maximum:          ptr.To[float64](43),
+				Maximum:          pointer.Float64(43),
 				ExclusiveMaximum: true,
-				Minimum:          ptr.To[float64](1),
+				Minimum:          pointer.Float64(1),
 				ExclusiveMinimum: false,
 			},
 		},
@@ -100,13 +100,13 @@ func Test_convertToAPIExtensionsJSONSchemaProps(t *testing.T) {
 				Properties: map[string]clusterv1.JSONSchemaProps{
 					"property1": {
 						Type:    "integer",
-						Minimum: ptr.To[int64](1),
+						Minimum: pointer.Int64(1),
 					},
 					"property2": {
 						Type:      "string",
 						Format:    "uri",
-						MinLength: ptr.To[int64](2),
-						MaxLength: ptr.To[int64](4),
+						MinLength: pointer.Int64(2),
+						MaxLength: pointer.Int64(4),
 					},
 				},
 			},
@@ -114,13 +114,13 @@ func Test_convertToAPIExtensionsJSONSchemaProps(t *testing.T) {
 				Properties: map[string]apiextensions.JSONSchemaProps{
 					"property1": {
 						Type:    "integer",
-						Minimum: ptr.To[float64](1),
+						Minimum: pointer.Float64(1),
 					},
 					"property2": {
 						Type:      "string",
 						Format:    "uri",
-						MinLength: ptr.To[int64](2),
-						MaxLength: ptr.To[int64](4),
+						MinLength: pointer.Int64(2),
+						MaxLength: pointer.Int64(4),
 					},
 				},
 			},
@@ -132,13 +132,13 @@ func Test_convertToAPIExtensionsJSONSchemaProps(t *testing.T) {
 					Properties: map[string]clusterv1.JSONSchemaProps{
 						"property1": {
 							Type:    "integer",
-							Minimum: ptr.To[int64](1),
+							Minimum: pointer.Int64(1),
 						},
 						"property2": {
 							Type:      "string",
 							Format:    "uri",
-							MinLength: ptr.To[int64](2),
-							MaxLength: ptr.To[int64](4),
+							MinLength: pointer.Int64(2),
+							MaxLength: pointer.Int64(4),
 						},
 					},
 				},
@@ -150,13 +150,13 @@ func Test_convertToAPIExtensionsJSONSchemaProps(t *testing.T) {
 						Properties: map[string]apiextensions.JSONSchemaProps{
 							"property1": {
 								Type:    "integer",
-								Minimum: ptr.To[float64](1),
+								Minimum: pointer.Float64(1),
 							},
 							"property2": {
 								Type:      "string",
 								Format:    "uri",
-								MinLength: ptr.To[int64](2),
-								MaxLength: ptr.To[int64](4),
+								MinLength: pointer.Int64(2),
+								MaxLength: pointer.Int64(4),
 							},
 						},
 					},
@@ -168,20 +168,20 @@ func Test_convertToAPIExtensionsJSONSchemaProps(t *testing.T) {
 			schema: &clusterv1.JSONSchemaProps{
 				Items: &clusterv1.JSONSchemaProps{
 					Type:      "integer",
-					Minimum:   ptr.To[int64](1),
+					Minimum:   pointer.Int64(1),
 					Format:    "uri",
-					MinLength: ptr.To[int64](2),
-					MaxLength: ptr.To[int64](4),
+					MinLength: pointer.Int64(2),
+					MaxLength: pointer.Int64(4),
 				},
 			},
 			want: &apiextensions.JSONSchemaProps{
 				Items: &apiextensions.JSONSchemaPropsOrArray{
 					Schema: &apiextensions.JSONSchemaProps{
 						Type:      "integer",
-						Minimum:   ptr.To[float64](1),
+						Minimum:   pointer.Float64(1),
 						Format:    "uri",
-						MinLength: ptr.To[int64](2),
-						MaxLength: ptr.To[int64](4),
+						MinLength: pointer.Int64(2),
+						MaxLength: pointer.Int64(4),
 					},
 				},
 			},

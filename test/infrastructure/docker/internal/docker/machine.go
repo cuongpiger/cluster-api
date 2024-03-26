@@ -441,7 +441,7 @@ func (m *Machine) SetNodeProviderID(ctx context.Context, c client.Client) error 
 	node.Spec.ProviderID = m.ProviderID()
 
 	if err = patchHelper.Patch(ctx, node); err != nil {
-		return errors.Wrap(err, "failed to set providerID")
+		return errors.Wrap(err, "failed update providerID")
 	}
 
 	return nil
@@ -508,7 +508,10 @@ func (m *Machine) CloudProviderNodePatch(ctx context.Context, c client.Client, d
 		}
 	}
 
-	return patchHelper.Patch(ctx, node)
+	if err = patchHelper.Patch(ctx, node); err != nil {
+		return errors.Wrap(err, "failed to patch node")
+	}
+	return nil
 }
 
 func (m *Machine) getDockerNode(ctx context.Context) (*types.Node, error) {

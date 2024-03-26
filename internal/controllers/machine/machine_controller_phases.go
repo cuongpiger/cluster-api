@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -43,9 +43,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 )
 
-var (
-	externalReadyWait = 30 * time.Second
-)
+var externalReadyWait = 30 * time.Second
 
 func (r *Reconciler) reconcilePhase(_ context.Context, m *clusterv1.Machine) {
 	originalPhase := m.Status.Phase
@@ -89,11 +87,43 @@ func (r *Reconciler) reconcilePhase(_ context.Context, m *clusterv1.Machine) {
 
 // reconcileExternal handles generic unstructured objects referenced by a Machine.
 func (r *Reconciler) reconcileExternal(ctx context.Context, cluster *clusterv1.Cluster, m *clusterv1.Machine, ref *corev1.ObjectReference) (external.ReconcileOutput, error) {
-	log := ctrl.LoggerFrom(ctx)
-
 	if err := utilconversion.UpdateReferenceAPIContract(ctx, r.Client, ref); err != nil {
 		return external.ReconcileOutput{}, err
 	}
+
+	result, err := r.ensureExternalOwnershipAndWatch(ctx, cluster, m, ref)
+	if err != nil {
+		return external.ReconcileOutput{}, err
+	}
+	if result.RequeueAfter > 0 || result.Paused {
+		return result, nil
+	}
+
+	obj := result.Result
+
+	// Set failure reason and message, if any.
+	failureReason, failureMessage, err := external.FailuresFrom(obj)
+	if err != nil {
+		return external.ReconcileOutput{}, err
+	}
+	if failureReason != "" {
+		machineStatusError := capierrors.MachineStatusError(failureReason)
+		m.Status.FailureReason = &machineStatusError
+	}
+	if failureMessage != "" {
+		m.Status.FailureMessage = pointer.String(
+			fmt.Sprintf("Failure detected from referenced resource %v with name %q: %s",
+				obj.GroupVersionKind(), obj.GetName(), failureMessage),
+		)
+	}
+
+	return external.ReconcileOutput{Result: obj}, nil
+}
+
+// ensureExternalOwnershipAndWatch ensures that only the Machine owns the external object,
+// adds a watch to the external object if one does not already exist and adds the necessary labels.
+func (r *Reconciler) ensureExternalOwnershipAndWatch(ctx context.Context, cluster *clusterv1.Cluster, m *clusterv1.Machine, ref *corev1.ObjectReference) (external.ReconcileOutput, error) {
+	log := ctrl.LoggerFrom(ctx)
 
 	obj, err := external.Get(ctx, r.UnstructuredCachingClient, ref, m.Namespace)
 	if err != nil {
@@ -144,22 +174,6 @@ func (r *Reconciler) reconcileExternal(ctx context.Context, cluster *clusterv1.C
 	// Always attempt to Patch the external object.
 	if err := patchHelper.Patch(ctx, obj); err != nil {
 		return external.ReconcileOutput{}, err
-	}
-
-	// Set failure reason and message, if any.
-	failureReason, failureMessage, err := external.FailuresFrom(obj)
-	if err != nil {
-		return external.ReconcileOutput{}, err
-	}
-	if failureReason != "" {
-		machineStatusError := capierrors.MachineStatusError(failureReason)
-		m.Status.FailureReason = &machineStatusError
-	}
-	if failureMessage != "" {
-		m.Status.FailureMessage = ptr.To(
-			fmt.Sprintf("Failure detected from referenced resource %v with name %q: %s",
-				obj.GroupVersionKind(), obj.GetName(), failureMessage),
-		)
 	}
 
 	return external.ReconcileOutput{Result: obj}, nil
@@ -230,7 +244,7 @@ func (r *Reconciler) reconcileBootstrap(ctx context.Context, s *scope) (ctrl.Res
 	} else if secretName == "" {
 		return ctrl.Result{}, errors.Errorf("retrieved empty dataSecretName from bootstrap provider for Machine %q in namespace %q", m.Name, m.Namespace)
 	}
-	m.Spec.Bootstrap.DataSecretName = ptr.To(secretName)
+	m.Spec.Bootstrap.DataSecretName = pointer.String(secretName)
 	if !m.Status.BootstrapReady {
 		log.Info("Bootstrap provider generated data secret and reports status.ready", bootstrapConfig.GetKind(), klog.KObj(bootstrapConfig), "Secret", klog.KRef(m.Namespace, secretName))
 	}
@@ -255,7 +269,7 @@ func (r *Reconciler) reconcileInfrastructure(ctx context.Context, s *scope) (ctr
 		if m.Status.InfrastructureReady {
 			log.Error(err, "Machine infrastructure reference has been deleted after being ready, setting failure state")
 			m.Status.FailureReason = capierrors.MachineStatusErrorPtr(capierrors.InvalidConfigurationMachineError)
-			m.Status.FailureMessage = ptr.To(fmt.Sprintf("Machine infrastructure resource %v with name %q has been deleted after being ready",
+			m.Status.FailureMessage = pointer.String(fmt.Sprintf("Machine infrastructure resource %v with name %q has been deleted after being ready",
 				m.Spec.InfrastructureRef.GroupVersionKind(), m.Spec.InfrastructureRef.Name))
 			return ctrl.Result{}, errors.Errorf("could not find %v %q for Machine %q in namespace %q, requeuing", m.Spec.InfrastructureRef.GroupVersionKind().String(), m.Spec.InfrastructureRef.Name, m.Name, m.Namespace)
 		}
@@ -315,10 +329,10 @@ func (r *Reconciler) reconcileInfrastructure(ctx context.Context, s *scope) (ctr
 	case err != nil:
 		return ctrl.Result{}, errors.Wrapf(err, "failed to retrieve failure domain from infrastructure provider for Machine %q in namespace %q", m.Name, m.Namespace)
 	default:
-		m.Spec.FailureDomain = ptr.To(failureDomain)
+		m.Spec.FailureDomain = pointer.String(failureDomain)
 	}
 
-	m.Spec.ProviderID = ptr.To(providerID)
+	m.Spec.ProviderID = pointer.String(providerID)
 	return ctrl.Result{}, nil
 }
 

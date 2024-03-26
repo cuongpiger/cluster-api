@@ -34,7 +34,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -75,6 +75,8 @@ type InMemoryMachineReconciler struct {
 
 // Reconcile handles InMemoryMachine events.
 func (r *InMemoryMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, rerr error) {
+	log := ctrl.LoggerFrom(ctx)
+
 	// Fetch the InMemoryMachine instance
 	inMemoryMachine := &infrav1.InMemoryMachine{}
 	if err := r.Client.Get(ctx, req.NamespacedName, inMemoryMachine); err != nil {
@@ -160,7 +162,10 @@ func (r *InMemoryMachineReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			conditions.WithStepCounterIf(inMemoryMachine.ObjectMeta.DeletionTimestamp.IsZero() && inMemoryMachine.Spec.ProviderID == nil),
 		)
 		if err := patchHelper.Patch(ctx, inMemoryMachine, patch.WithOwnedConditions{Conditions: inMemoryMachineConditions}); err != nil {
-			rerr = kerrors.NewAggregate([]error{rerr, err})
+			log.Error(err, "failed to patch InMemoryMachine")
+			if rerr == nil {
+				rerr = err
+			}
 		}
 	}()
 
@@ -285,7 +290,7 @@ func (r *InMemoryMachineReconciler) reconcileNormalCloudMachine(ctx context.Cont
 
 	// TODO: consider if to surface VM provisioned also on the cloud machine (currently it surfaces only on the inMemoryMachine)
 
-	inMemoryMachine.Spec.ProviderID = ptr.To(calculateProviderID(inMemoryMachine))
+	inMemoryMachine.Spec.ProviderID = pointer.String(calculateProviderID(inMemoryMachine))
 	inMemoryMachine.Status.Ready = true
 	conditions.MarkTrue(inMemoryMachine, infrav1.VMProvisionedCondition)
 	return ctrl.Result{}, nil

@@ -126,7 +126,7 @@ func (r *Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 		Cache:      mgr.GetCache(),
 	}
 	r.patchEngine = patches.NewEngine(r.RuntimeClient)
-	r.recorder = mgr.GetEventRecorderFor("topology/cluster-controller")
+	r.recorder = mgr.GetEventRecorderFor("topology/cluster")
 	if r.patchHelperFactory == nil {
 		r.patchHelperFactory = serverSideApplyPatchHelperFactory(r.Client, ssa.NewCache())
 	}
@@ -191,7 +191,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Re
 			patch.WithForceOverwriteConditions{},
 		}
 		if err := patchHelper.Patch(ctx, cluster, options...); err != nil {
-			reterr = kerrors.NewAggregate([]error{reterr, err})
+			reterr = kerrors.NewAggregate([]error{reterr, errors.Wrap(err, "failed to patch cluster")})
 			return
 		}
 	}()
@@ -209,7 +209,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Re
 		// the current cluster because of concurrent access.
 		if errors.Is(err, remote.ErrClusterLocked) {
 			log.V(5).Info("Requeuing because another worker has the lock on the ClusterCacheTracker")
-			return ctrl.Result{RequeueAfter: time.Minute}, nil
+			return ctrl.Result{Requeue: true}, nil
 		}
 	}
 	return result, err

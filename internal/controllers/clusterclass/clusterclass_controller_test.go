@@ -30,7 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -185,7 +185,7 @@ func assertInfrastructureClusterTemplate(ctx context.Context, actualClusterClass
 	if err := env.Get(ctx, actualInfraClusterTemplateKey, actualInfraClusterTemplate); err != nil {
 		return err
 	}
-	if err := assertHasOwnerReference(actualInfraClusterTemplate, *ownerReferenceTo(actualClusterClass, clusterv1.GroupVersion.WithKind("ClusterClass"))); err != nil {
+	if err := assertHasOwnerReference(actualInfraClusterTemplate, *ownerReferenceTo(actualClusterClass)); err != nil {
 		return err
 	}
 
@@ -205,7 +205,7 @@ func assertControlPlaneTemplate(ctx context.Context, actualClusterClass *cluster
 	if err := env.Get(ctx, actualControlPlaneTemplateKey, actualControlPlaneTemplate); err != nil {
 		return err
 	}
-	if err := assertHasOwnerReference(actualControlPlaneTemplate, *ownerReferenceTo(actualClusterClass, clusterv1.GroupVersion.WithKind("ClusterClass"))); err != nil {
+	if err := assertHasOwnerReference(actualControlPlaneTemplate, *ownerReferenceTo(actualClusterClass)); err != nil {
 		return err
 	}
 
@@ -226,7 +226,7 @@ func assertControlPlaneTemplate(ctx context.Context, actualClusterClass *cluster
 		if err := env.Get(ctx, actualInfrastructureMachineTemplateKey, actualInfrastructureMachineTemplate); err != nil {
 			return err
 		}
-		if err := assertHasOwnerReference(actualInfrastructureMachineTemplate, *ownerReferenceTo(actualClusterClass, clusterv1.GroupVersion.WithKind("ClusterClass"))); err != nil {
+		if err := assertHasOwnerReference(actualInfrastructureMachineTemplate, *ownerReferenceTo(actualClusterClass)); err != nil {
 			return err
 		}
 
@@ -260,7 +260,7 @@ func assertMachineDeploymentClass(ctx context.Context, actualClusterClass *clust
 	if err := env.Get(ctx, actualInfrastructureMachineTemplateKey, actualInfrastructureMachineTemplate); err != nil {
 		return err
 	}
-	if err := assertHasOwnerReference(actualInfrastructureMachineTemplate, *ownerReferenceTo(actualClusterClass, clusterv1.GroupVersion.WithKind("ClusterClass"))); err != nil {
+	if err := assertHasOwnerReference(actualInfrastructureMachineTemplate, *ownerReferenceTo(actualClusterClass)); err != nil {
 		return err
 	}
 
@@ -280,7 +280,7 @@ func assertMachineDeploymentClass(ctx context.Context, actualClusterClass *clust
 	if err := env.Get(ctx, actualBootstrapTemplateKey, actualBootstrapTemplate); err != nil {
 		return err
 	}
-	if err := assertHasOwnerReference(actualBootstrapTemplate, *ownerReferenceTo(actualClusterClass, clusterv1.GroupVersion.WithKind("ClusterClass"))); err != nil {
+	if err := assertHasOwnerReference(actualBootstrapTemplate, *ownerReferenceTo(actualClusterClass)); err != nil {
 		return err
 	}
 
@@ -394,7 +394,7 @@ func TestReconciler_reconcileVariables(t *testing.T) {
 					{
 						Name: "patch1",
 						External: &clusterv1.ExternalPatchDefinition{
-							DiscoverVariablesExtension: ptr.To("variables-one"),
+							DiscoverVariablesExtension: pointer.String("variables-one"),
 						}}}).
 				Build(),
 			patchResponse: &runtimehooksv1.DiscoverVariablesResponse{
@@ -497,7 +497,7 @@ func TestReconciler_reconcileVariables(t *testing.T) {
 					{
 						Name: "patch1",
 						External: &clusterv1.ExternalPatchDefinition{
-							DiscoverVariablesExtension: ptr.To("variables-one"),
+							DiscoverVariablesExtension: pointer.String("variables-one"),
 						}}}).
 				Build(),
 			patchResponse: &runtimehooksv1.DiscoverVariablesResponse{
@@ -579,18 +579,18 @@ func TestReconciler_extensionConfigToClusterClass(t *testing.T) {
 	// These ClusterClasses will be reconciled as they both reference the passed ExtensionConfig `runtime1`.
 	onePatchClusterClass := builder.ClusterClass(metav1.NamespaceDefault, "cc1").
 		WithPatches([]clusterv1.ClusterClassPatch{
-			{External: &clusterv1.ExternalPatchDefinition{DiscoverVariablesExtension: ptr.To("discover-variables.runtime1")}}}).
+			{External: &clusterv1.ExternalPatchDefinition{DiscoverVariablesExtension: pointer.String("discover-variables.runtime1")}}}).
 		Build()
 	twoPatchClusterClass := builder.ClusterClass(metav1.NamespaceDefault, "cc2").
 		WithPatches([]clusterv1.ClusterClassPatch{
-			{External: &clusterv1.ExternalPatchDefinition{DiscoverVariablesExtension: ptr.To("discover-variables.runtime1")}},
-			{External: &clusterv1.ExternalPatchDefinition{DiscoverVariablesExtension: ptr.To("discover-variables.runtime2")}}}).
+			{External: &clusterv1.ExternalPatchDefinition{DiscoverVariablesExtension: pointer.String("discover-variables.runtime1")}},
+			{External: &clusterv1.ExternalPatchDefinition{DiscoverVariablesExtension: pointer.String("discover-variables.runtime2")}}}).
 		Build()
 
 	// This ClusterClasses will not be reconciled as it does not reference the passed ExtensionConfig `runtime1`.
 	notReconciledClusterClass := builder.ClusterClass(metav1.NamespaceDefault, "cc3").
 		WithPatches([]clusterv1.ClusterClassPatch{
-			{External: &clusterv1.ExternalPatchDefinition{DiscoverVariablesExtension: ptr.To("discover-variables.other-runtime-class")}}}).
+			{External: &clusterv1.ExternalPatchDefinition{DiscoverVariablesExtension: pointer.String("discover-variables.other-runtime-class")}}}).
 		Build()
 
 	t.Run("test", func(t *testing.T) {

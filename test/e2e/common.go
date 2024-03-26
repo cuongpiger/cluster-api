@@ -31,7 +31,6 @@ import (
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
 )
 
@@ -49,8 +48,6 @@ const (
 	CoreDNSVersionUpgradeTo         = "COREDNS_VERSION_UPGRADE_TO"
 	IPFamily                        = "IP_FAMILY"
 )
-
-var releaseMarkerPrefix = "go://sigs.k8s.io/cluster-api@v%s"
 
 func Byf(format string, a ...interface{}) {
 	By(fmt.Sprintf(format, a...))
@@ -153,10 +150,4 @@ func (m *validVersionMatcher) FailureMessage(_ interface{}) (message string) {
 
 func (m *validVersionMatcher) NegatedFailureMessage(_ interface{}) (message string) {
 	return fmt.Sprintf("Expected\n%s\n%s", m.version, " not to be a valid version ")
-}
-
-// GetStableReleaseOfMinor returns latest stable version of minorRelease.
-func GetStableReleaseOfMinor(ctx context.Context, minorRelease string) (string, error) {
-	releaseMarker := fmt.Sprintf(releaseMarkerPrefix, minorRelease)
-	return clusterctl.ResolveRelease(ctx, releaseMarker)
 }

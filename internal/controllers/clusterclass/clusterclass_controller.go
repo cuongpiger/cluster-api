@@ -114,7 +114,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Re
 
 	patchHelper, err := patch.NewHelper(clusterClass, r.Client)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, errors.Wrapf(err, "failed to create patch helper for %s", tlog.KObj{Obj: clusterClass})
 	}
 
 	defer func() {
@@ -124,7 +124,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Re
 			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
 		}
 		if err := patchHelper.Patch(ctx, clusterClass, patchOpts...); err != nil {
-			reterr = kerrors.NewAggregate([]error{reterr, err})
+			reterr = kerrors.NewAggregate([]error{reterr, errors.Wrapf(err, "failed to patch %s", tlog.KObj{Obj: clusterClass})})
 			return
 		}
 	}()
@@ -374,7 +374,7 @@ func (r *Reconciler) reconcileExternal(ctx context.Context, clusterClass *cluste
 	// Initialize the patch helper.
 	patchHelper, err := patch.NewHelper(obj, r.Client)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to create patch helper for %s", tlog.KObj{Obj: obj})
 	}
 
 	// Set external object ControllerReference to the ClusterClass.
@@ -383,7 +383,11 @@ func (r *Reconciler) reconcileExternal(ctx context.Context, clusterClass *cluste
 	}
 
 	// Patch the external object.
-	return patchHelper.Patch(ctx, obj)
+	if err := patchHelper.Patch(ctx, obj); err != nil {
+		return errors.Wrapf(err, "failed to patch object %s", tlog.KObj{Obj: obj})
+	}
+
+	return nil
 }
 
 func uniqueObjectRefKey(ref *corev1.ObjectReference) string {

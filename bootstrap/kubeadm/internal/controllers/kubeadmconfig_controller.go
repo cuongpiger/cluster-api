@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -226,7 +226,7 @@ func (r *KubeadmConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
 		}
 		if err := patchHelper.Patch(ctx, config, patchOpts...); err != nil {
-			rerr = kerrors.NewAggregate([]error{rerr, err})
+			rerr = kerrors.NewAggregate([]error{rerr, errors.Wrapf(err, "failed to patch %s", klog.KObj(config))})
 		}
 	}()
 
@@ -240,7 +240,7 @@ func (r *KubeadmConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		// Requeue if the reconcile failed because the ClusterCacheTracker was locked for
 		// the current cluster because of concurrent access.
 		log.V(5).Info("Requeuing because another worker has the lock on the ClusterCacheTracker")
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 	return res, err
 }
@@ -416,7 +416,7 @@ func (r *KubeadmConfigReconciler) handleClusterNotInitialized(ctx context.Contex
 	if scope.Config.Spec.InitConfiguration == nil {
 		scope.Config.Spec.InitConfiguration = &bootstrapv1.InitConfiguration{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "kubeadm.k8s.io/v1beta3",
+				APIVersion: "kubeadm.k8s.io/v1beta1",
 				Kind:       "InitConfiguration",
 			},
 		}
@@ -431,7 +431,7 @@ func (r *KubeadmConfigReconciler) handleClusterNotInitialized(ctx context.Contex
 	if scope.Config.Spec.ClusterConfiguration == nil {
 		scope.Config.Spec.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "kubeadm.k8s.io/v1beta3",
+				APIVersion: "kubeadm.k8s.io/v1beta1",
 				Kind:       "ClusterConfiguration",
 			},
 		}
@@ -1027,7 +1027,7 @@ func (r *KubeadmConfigReconciler) storeBootstrapData(ctx context.Context, scope 
 					Kind:       "KubeadmConfig",
 					Name:       scope.Config.Name,
 					UID:        scope.Config.UID,
-					Controller: ptr.To(true),
+					Controller: pointer.Bool(true),
 				},
 			},
 		},
@@ -1049,7 +1049,7 @@ func (r *KubeadmConfigReconciler) storeBootstrapData(ctx context.Context, scope 
 			return errors.Wrapf(err, "failed to update bootstrap data secret for KubeadmConfig %s/%s", scope.Config.Namespace, scope.Config.Name)
 		}
 	}
-	scope.Config.Status.DataSecretName = ptr.To(secret.Name)
+	scope.Config.Status.DataSecretName = pointer.String(secret.Name)
 	scope.Config.Status.Ready = true
 	conditions.MarkTrue(scope.Config, bootstrapv1.DataSecretAvailableCondition)
 	return nil
@@ -1078,7 +1078,7 @@ func (r *KubeadmConfigReconciler) ensureBootstrapSecretOwnersRef(ctx context.Con
 		Kind:       "KubeadmConfig",
 		UID:        scope.Config.UID,
 		Name:       scope.Config.Name,
-		Controller: ptr.To(true),
+		Controller: pointer.Bool(true),
 	}))
 	err = patchHelper.Patch(ctx, secret)
 	if err != nil {

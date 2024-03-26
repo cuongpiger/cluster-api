@@ -334,12 +334,12 @@ func GetProportion(ms *clusterv1.MachineSet, md clusterv1.MachineDeployment, dep
 		// Use the minimum between the machine set fraction and the maximum allowed replicas
 		// when scaling up. This way we ensure we will not scale up more than the allowed
 		// replicas we can add.
-		return min(msFraction, allowed)
+		return integer.Int32Min(msFraction, allowed)
 	}
 	// Use the maximum between the machine set fraction and the maximum allowed replicas
 	// when scaling down. This way we ensure we will not scale down more than the allowed
 	// replicas we can remove.
-	return max(msFraction, allowed)
+	return integer.Int32Max(msFraction, allowed)
 }
 
 // getMachineSetFraction estimates the fraction of replicas a machine set can have in
@@ -485,7 +485,7 @@ func TotalMachineSetsReplicaSum(machineSets []*clusterv1.MachineSet) int32 {
 	totalReplicas := int32(0)
 	for _, ms := range machineSets {
 		if ms != nil {
-			totalReplicas += max(*(ms.Spec.Replicas), ms.Status.Replicas)
+			totalReplicas += integer.Int32Max(*(ms.Spec.Replicas), ms.Status.Replicas)
 		}
 	}
 	return totalReplicas
@@ -550,7 +550,7 @@ func NewMSNewReplicas(deployment *clusterv1.MachineDeployment, allMSs []*cluster
 		// Scale up.
 		scaleUpCount := maxTotalMachines - currentMachineCount
 		// Do not exceed the number of desired replicas.
-		scaleUpCount = min(scaleUpCount, *(deployment.Spec.Replicas)-newMSReplicas)
+		scaleUpCount = integer.Int32Min(scaleUpCount, *(deployment.Spec.Replicas)-newMSReplicas)
 		return newMSReplicas + scaleUpCount, nil
 	case clusterv1.OnDeleteMachineDeploymentStrategyType:
 		// Find the total number of machines

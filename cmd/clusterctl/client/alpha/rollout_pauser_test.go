@@ -153,7 +153,7 @@ func Test_ObjectPauser(t *testing.T) {
 			}
 			g.Expect(err).ToNot(HaveOccurred())
 			for _, obj := range tt.fields.objs {
-				cl, err := proxy.NewClient(context.Background())
+				cl, err := proxy.NewClient()
 				g.Expect(err).ToNot(HaveOccurred())
 				key := client.ObjectKeyFromObject(obj)
 				switch obj.(type) {

@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -107,10 +107,10 @@ func TestPatch(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSpec{
 				ClusterName:      "cluster-1",
-				Version:          ptr.To("v1.25.0"),
+				Version:          pointer.String("v1.25.0"),
 				NodeDrainTimeout: &metav1.Duration{Duration: 10 * time.Second},
 				Bootstrap: clusterv1.Bootstrap{
-					DataSecretName: ptr.To("data-secret"),
+					DataSecretName: pointer.String("data-secret"),
 				},
 				InfrastructureRef: corev1.ObjectReference{
 					// The namespace needs to get set here. Otherwise the defaulting webhook always sets this field again

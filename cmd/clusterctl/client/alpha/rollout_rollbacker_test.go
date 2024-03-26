@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -71,7 +71,7 @@ func Test_ObjectRollbacker(t *testing.T) {
 						Name:       "md-template",
 					},
 					Bootstrap: clusterv1.Bootstrap{
-						DataSecretName: ptr.To("data-secret-name"),
+						DataSecretName: pointer.String("data-secret-name"),
 					},
 				},
 			},
@@ -150,7 +150,7 @@ func Test_ObjectRollbacker(t *testing.T) {
 										Name:       "md-template-rollback",
 									},
 									Bootstrap: clusterv1.Bootstrap{
-										DataSecretName: ptr.To("data-secret-name-rollback"),
+										DataSecretName: pointer.String("data-secret-name-rollback"),
 									},
 								},
 							},
@@ -247,7 +247,7 @@ func Test_ObjectRollbacker(t *testing.T) {
 				return
 			}
 			g.Expect(err).ToNot(HaveOccurred())
-			cl, err := proxy.NewClient(context.Background())
+			cl, err := proxy.NewClient()
 			g.Expect(err).ToNot(HaveOccurred())
 			key := client.ObjectKeyFromObject(deployment)
 			md := &clusterv1.MachineDeployment{}

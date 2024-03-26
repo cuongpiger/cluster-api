@@ -122,35 +122,13 @@ func (dst *DockerClusterTemplateList) ConvertFrom(srcRaw conversion.Hub) error {
 func (src *DockerMachine) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.DockerMachine)
 
-	if err := Convert_v1alpha4_DockerMachine_To_v1beta1_DockerMachine(src, dst, nil); err != nil {
-		return err
-	}
-
-	// Manually restore data.
-	restored := &infrav1.DockerMachine{}
-	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
-		return err
-	}
-
-	if restored.Spec.BootstrapTimeout != nil {
-		dst.Spec.BootstrapTimeout = restored.Spec.BootstrapTimeout
-	}
-
-	return nil
+	return Convert_v1alpha4_DockerMachine_To_v1beta1_DockerMachine(src, dst, nil)
 }
 
 func (dst *DockerMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.DockerMachine)
 
-	if err := Convert_v1beta1_DockerMachine_To_v1alpha4_DockerMachine(src, dst, nil); err != nil {
-		return err
-	}
-
-	if err := utilconversion.MarshalData(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return Convert_v1beta1_DockerMachine_To_v1alpha4_DockerMachine(src, dst, nil)
 }
 
 func (src *DockerMachineList) ConvertTo(dstRaw conversion.Hub) error {
@@ -179,7 +157,6 @@ func (src *DockerMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	}
 
 	dst.Spec.Template.ObjectMeta = restored.Spec.Template.ObjectMeta
-	dst.Spec.Template.Spec.BootstrapTimeout = restored.Spec.Template.Spec.BootstrapTimeout
 
 	return nil
 }
@@ -223,8 +200,4 @@ func Convert_v1beta1_DockerMachineTemplateResource_To_v1alpha4_DockerMachineTemp
 
 func Convert_v1beta1_DockerLoadBalancer_To_v1alpha4_DockerLoadBalancer(in *infrav1.DockerLoadBalancer, out *DockerLoadBalancer, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_DockerLoadBalancer_To_v1alpha4_DockerLoadBalancer(in, out, s)
-}
-
-func Convert_v1beta1_DockerMachineSpec_To_v1alpha4_DockerMachineSpec(in *infrav1.DockerMachineSpec, out *DockerMachineSpec, s apiconversion.Scope) error {
-	return autoConvert_v1beta1_DockerMachineSpec_To_v1alpha4_DockerMachineSpec(in, out, s)
 }

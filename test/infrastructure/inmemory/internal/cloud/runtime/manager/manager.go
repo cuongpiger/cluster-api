@@ -24,10 +24,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	ccache "sigs.k8s.io/cluster-api/test/infrastructure/inmemory/internal/cloud/runtime/cache"
+	ccontroller "sigs.k8s.io/cluster-api/test/infrastructure/inmemory/internal/cloud/runtime/controller"
 	cresourcegroup "sigs.k8s.io/cluster-api/test/infrastructure/inmemory/internal/cloud/runtime/resourcegroup"
 )
 
-// Manager initializes shared dependencies such as Caches and Clients.
+// Manager initializes shared dependencies such as Caches and Clients, and provides them to Runnables.
+// A Manager is required to create Controllers.
 type Manager interface {
 	// TODO: refactor in resoucegroup.add/delete/get; make delete fail if rs does not exist
 	AddResourceGroup(name string)
@@ -39,6 +41,8 @@ type Manager interface {
 	// TODO: expose less (only get informers)
 	GetCache() ccache.Cache
 
+	AddController(ccontroller.Controller) error
+
 	Start(ctx context.Context) error
 }
 
@@ -47,14 +51,17 @@ var _ Manager = &manager{}
 type manager struct {
 	scheme *runtime.Scheme
 
-	cache   ccache.Cache
-	started bool
+	cache ccache.Cache
+
+	controllers []ccontroller.Controller
+	started     bool
 }
 
 // New creates a new manager.
 func New(scheme *runtime.Scheme) Manager {
 	m := &manager{
-		scheme: scheme,
+		scheme:      scheme,
+		controllers: make([]ccontroller.Controller, 0),
 	}
 	m.cache = ccache.NewCache(scheme)
 	return m
@@ -81,6 +88,15 @@ func (m *manager) GetCache() ccache.Cache {
 	return m.cache
 }
 
+func (m *manager) AddController(controller ccontroller.Controller) error {
+	if m.started {
+		return fmt.Errorf("cannot add controller to a manager already started")
+	}
+
+	m.controllers = append(m.controllers, controller)
+	return nil
+}
+
 func (m *manager) Start(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -94,6 +110,13 @@ func (m *manager) Start(ctx context.Context) error {
 
 	if err := m.cache.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start cache: %v", err)
+	}
+
+	log.Info("Starting manager")
+	for _, c := range m.controllers {
+		if err := c.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start controllers: %v", err)
+		}
 	}
 
 	m.started = true

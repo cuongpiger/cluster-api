@@ -21,7 +21,7 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("When upgrading a workload cluster using ClusterClass and testing K8S conformance [Conformance] [K8s-Upgrade] [ClusterClass]", func() {
@@ -32,8 +32,8 @@ var _ = Describe("When upgrading a workload cluster using ClusterClass and testi
 			BootstrapClusterProxy:  bootstrapClusterProxy,
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
-			InfrastructureProvider: ptr.To("docker"),
-			Flavor:                 ptr.To("upgrades"),
+			InfrastructureProvider: pointer.String("docker"),
+			Flavor:                 pointer.String("upgrades"),
 		}
 	})
 })
@@ -46,12 +46,12 @@ var _ = Describe("When upgrading a workload cluster using ClusterClass [ClusterC
 			BootstrapClusterProxy:  bootstrapClusterProxy,
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
-			InfrastructureProvider: ptr.To("docker"),
-			Flavor:                 ptr.To("topology"),
+			InfrastructureProvider: pointer.String("docker"),
+			Flavor:                 pointer.String("topology"),
 			// This test is run in CI in parallel with other tests. To keep the test duration reasonable
 			// the conformance tests are skipped.
-			ControlPlaneMachineCount: ptr.To[int64](1),
-			WorkerMachineCount:       ptr.To[int64](2),
+			ControlPlaneMachineCount: pointer.Int64(1),
+			WorkerMachineCount:       pointer.Int64(2),
 			SkipConformanceTests:     true,
 		}
 	})
@@ -65,13 +65,13 @@ var _ = Describe("When upgrading a workload cluster using ClusterClass with a HA
 			BootstrapClusterProxy:  bootstrapClusterProxy,
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
-			InfrastructureProvider: ptr.To("docker"),
+			InfrastructureProvider: pointer.String("docker"),
 			// This test is run in CI in parallel with other tests. To keep the test duration reasonable
 			// the conformance tests are skipped.
 			SkipConformanceTests:     true,
-			ControlPlaneMachineCount: ptr.To[int64](3),
-			WorkerMachineCount:       ptr.To[int64](1),
-			Flavor:                   ptr.To("topology"),
+			ControlPlaneMachineCount: pointer.Int64(3),
+			WorkerMachineCount:       pointer.Int64(1),
+			Flavor:                   pointer.String("topology"),
 		}
 	})
 })
@@ -84,13 +84,13 @@ var _ = Describe("When upgrading a workload cluster using ClusterClass with a HA
 			BootstrapClusterProxy:  bootstrapClusterProxy,
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
-			InfrastructureProvider: ptr.To("docker"),
+			InfrastructureProvider: pointer.String("docker"),
 			// This test is run in CI in parallel with other tests. To keep the test duration reasonable
 			// the conformance tests are skipped.
 			SkipConformanceTests:     true,
-			ControlPlaneMachineCount: ptr.To[int64](3),
-			WorkerMachineCount:       ptr.To[int64](1),
-			Flavor:                   ptr.To("kcp-scale-in"),
+			ControlPlaneMachineCount: pointer.Int64(3),
+			WorkerMachineCount:       pointer.Int64(1),
+			Flavor:                   pointer.String("kcp-scale-in"),
 		}
 	})
 })

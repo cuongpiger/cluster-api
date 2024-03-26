@@ -72,7 +72,7 @@ func TestClusterClassExists(t *testing.T) {
 
 			config := newFakeConfig(ctx)
 			client := newFakeCluster(cluster.Kubeconfig{Path: "kubeconfig", Context: "mgmt-context"}, config).WithObjs(tt.objs...)
-			c, _ := client.Proxy().NewClient(ctx)
+			c, _ := client.Proxy().NewClient()
 
 			actual, err := clusterClassExists(ctx, c, tt.clusterClass, metav1.NamespaceDefault)
 			g.Expect(err).ToNot(HaveOccurred())

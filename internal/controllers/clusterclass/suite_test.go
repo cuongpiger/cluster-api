@@ -90,15 +90,12 @@ func TestMain(m *testing.M) {
 	}))
 }
 
-// ownerReferenceTo converts an object to an OwnerReference.
-// Note: We pass in gvk explicitly as we can't rely on GVK being set on all objects
-// (only on Unstructured).
-func ownerReferenceTo(obj client.Object, gvk schema.GroupVersionKind) *metav1.OwnerReference {
+func ownerReferenceTo(obj client.Object) *metav1.OwnerReference {
 	return &metav1.OwnerReference{
-		APIVersion: gvk.GroupVersion().String(),
-		Kind:       gvk.Kind,
+		Kind:       obj.GetObjectKind().GroupVersionKind().Kind,
 		Name:       obj.GetName(),
 		UID:        obj.GetUID(),
+		APIVersion: obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
 	}
 }
 

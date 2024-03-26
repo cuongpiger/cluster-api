@@ -19,6 +19,7 @@ package webhooks
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"sigs.k8s.io/cluster-api/internal/webhooks"
 )
@@ -56,11 +57,15 @@ func (webhook *Machine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 }
 
 // MachineDeployment implements a validating and defaulting webhook for MachineDeployment.
-type MachineDeployment struct{}
+type MachineDeployment struct {
+	Decoder *admission.Decoder
+}
 
 // SetupWebhookWithManager sets up MachineDeployment webhooks.
 func (webhook *MachineDeployment) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return (&webhooks.MachineDeployment{}).SetupWebhookWithManager(mgr)
+	return (&webhooks.MachineDeployment{
+		Decoder: webhook.Decoder,
+	}).SetupWebhookWithManager(mgr)
 }
 
 // MachineSet implements a validating and defaulting webhook for MachineSet.

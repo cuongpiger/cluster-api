@@ -20,6 +20,7 @@ aliases:
   # non-admin folks who have write-access and can approve any PRs in the repo
   cluster-api-maintainers:
   - CecileRobertMichon
+  - chrischdi
   - enxebre
   - fabriziopandini
   - killianmuldoon
@@ -28,7 +29,6 @@ aliases:
 
   # folks who can review and LGTM any PRs in the repo
   cluster-api-reviewers:
-  - chrischdi
   - jackfrancis
   - JoelSpeed
   - richardcase
@@ -122,26 +122,23 @@ aliases:
   # -----------------------------------------------------------
 
   cluster-api-release-lead:
-  - cahillsf
+  - furkatgofurov7
   
   cluster-api-release-team:
   # members added in commented lines have a pending membership
   # and will be added back once it is acquired.
-  - adilGhaffarDev # release ci lead
-  # - adityabhatia
-  # - akshay196
-  - cahillsf # release lead
-  # - chandankumar4
-  # - Dhairya-Arora01
-  - Fedosin
-  # - mansikulkarni96
-  - mcbenjemaa
-  - nawazkh
-  # - ssuriyan7
-  - SubhasmitaSw
+  - adilGhaffarDev
+  - cahillsf
+  - chiukapoor
+  - furkatgofurov7 # release lead
+  - g-gaston # release comms manager
+  - hackeramitkumar
+  # - kranurag7
+  - mjlshen
+  - nawazkh # release ci manager
+  - nprokopic
+  - Prajyot-Parab
+  # - razashahid107
   # - Sunnatillo
-  - troy0820 
-  # - typeid
-  - VibhorChinda
-  - willie-yao # release comms lead
-  - yrs147 
+  - vincepri
+  - willie-yao

@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-      - image: quay.io/cuongdm8499/cluster-api-controller-amd64:dev
+      - image: gcr.io/k8s-staging-cluster-api/cluster-api-controller:main
         name: manager

@@ -23,7 +23,7 @@ import (
 	"github.com/blang/semver/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("When upgrading a workload cluster using ClusterClass with RuntimeSDK [ClusterClass]", func() {
@@ -40,9 +40,9 @@ var _ = Describe("When upgrading a workload cluster using ClusterClass with Runt
 			BootstrapClusterProxy:  bootstrapClusterProxy,
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
-			InfrastructureProvider: ptr.To("docker"),
+			InfrastructureProvider: pointer.String("docker"),
 			// "upgrades" is the same as the "topology" flavor but with an additional MachinePool.
-			Flavor: ptr.To("upgrades-runtimesdk"),
+			Flavor: pointer.String("upgrades-runtimesdk"),
 		}
 	})
 })

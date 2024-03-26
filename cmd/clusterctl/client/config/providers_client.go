@@ -45,6 +45,7 @@ const (
 	DOProviderName             = "digitalocean"
 	GCPProviderName            = "gcp"
 	HetznerProviderName        = "hetzner"
+	HivelocityProviderName     = "hivelocity-hivelocity"
 	OutscaleProviderName       = "outscale"
 	IBMCloudProviderName       = "ibmcloud"
 	InMemoryProviderName       = "in-memory"
@@ -53,7 +54,6 @@ const (
 	NutanixProviderName        = "nutanix"
 	OCIProviderName            = "oci"
 	OpenStackProviderName      = "openstack"
-	VngCloudProviderName       = "vngcloud"
 	PacketProviderName         = "packet"
 	SideroProviderName         = "sidero"
 	VCloudDirectorProviderName = "vcd"
@@ -65,6 +65,7 @@ const (
 	VirtinkProviderName        = "virtink"
 	CoxEdgeProviderName        = "coxedge"
 	ProxmoxProviderName        = "proxmox"
+	K0smotronProviderName      = "k0sproject-k0smotron"
 )
 
 // Bootstrap providers.
@@ -75,6 +76,7 @@ const (
 	OracleCloudNativeBootstrapProviderName = "ocne"
 	KubeKeyK3sBootstrapProviderName        = "kubekey-k3s"
 	RKE2BootstrapProviderName              = "rke2"
+	K0smotronBootstrapProviderName         = "k0sproject-k0smotron"
 )
 
 // ControlPlane providers.
@@ -86,8 +88,8 @@ const (
 	OracleCloudNativeControlPlaneProviderName = "ocne"
 	KubeKeyK3sControlPlaneProviderName        = "kubekey-k3s"
 	KamajiControlPlaneProviderName            = "kamaji"
-	VngCloudControlPlaneProviderName          = "vngcloud"
 	RKE2ControlPlaneProviderName              = "rke2"
+	K0smotronControlPlaneProviderName         = "k0sproject-k0smotron"
 )
 
 // Add-on providers.
@@ -137,15 +139,14 @@ func (p *providersClient) defaults() []Provider {
 		// cluster API core provider
 		&provider{
 			name:         ClusterAPIProviderName,
-			url:          "https://github.com/cuongpiger/cluster-api-manifest/releases/latest/core-components.yaml",
+			url:          "https://github.com/kubernetes-sigs/cluster-api/releases/latest/core-components.yaml",
 			providerType: clusterctlv1.CoreProviderType,
 		},
 
 		// Infrastructure providers
 		&provider{
-			name: AWSProviderName,
-			url: ":wq" +
-				"/cluster-api-provider-aws/releases/latest/infrastructure-components.yaml",
+			name:         AWSProviderName,
+			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
@@ -200,11 +201,6 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
-			name:         VngCloudProviderName,
-			url:          "https://github.com/cuongpiger/cluster-api-provider-vngcloud-manifest/releases/latest/infrastructure-components.yaml",
-			providerType: clusterctlv1.InfrastructureProviderType,
-		},
-		&provider{
 			name:         SideroProviderName,
 			url:          "https://github.com/siderolabs/sidero/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
@@ -237,6 +233,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         HetznerProviderName,
 			url:          "https://github.com/syself/cluster-api-provider-hetzner/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         HivelocityProviderName,
+			url:          "https://github.com/hivelocity/cluster-api-provider-hivelocity/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
@@ -284,11 +285,16 @@ func (p *providersClient) defaults() []Provider {
 			url:          "https://github.com/ionos-cloud/cluster-api-provider-proxmox/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
+		&provider{
+			name:         K0smotronProviderName,
+			url:          "https://github.com/k0sproject/k0smotron/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
 
 		// Bootstrap providers
 		&provider{
 			name:         KubeadmBootstrapProviderName,
-			url:          "https://github.com/cuongpiger/cluster-api-manifest/releases/latest/bootstrap-components.yaml",
+			url:          "https://github.com/kubernetes-sigs/cluster-api/releases/latest/bootstrap-components.yaml",
 			providerType: clusterctlv1.BootstrapProviderType,
 		},
 		&provider{
@@ -314,6 +320,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         RKE2BootstrapProviderName,
 			url:          "https://github.com/rancher-sandbox/cluster-api-provider-rke2/releases/latest/bootstrap-components.yaml",
+			providerType: clusterctlv1.BootstrapProviderType,
+		},
+		&provider{
+			name:         K0smotronBootstrapProviderName,
+			url:          "https://github.com/k0sproject/k0smotron/releases/latest/bootstrap-components.yaml",
 			providerType: clusterctlv1.BootstrapProviderType,
 		},
 
@@ -354,13 +365,13 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 		&provider{
-			name:         VngCloudControlPlaneProviderName,
-			url:          "https://github.com/cuongpiger/cluster-api-control-plane-vngcloud-manifest/releases/latest/control-plane-components.yaml",
+			name:         RKE2ControlPlaneProviderName,
+			url:          "https://github.com/rancher-sandbox/cluster-api-provider-rke2/releases/latest/control-plane-components.yaml",
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 		&provider{
-			name:         RKE2ControlPlaneProviderName,
-			url:          "https://github.com/rancher-sandbox/cluster-api-provider-rke2/releases/latest/control-plane-components.yaml",
+			name:         K0smotronControlPlaneProviderName,
+			url:          "https://github.com/k0sproject/k0smotron/releases/latest/control-plane-components.yaml",
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 

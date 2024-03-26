@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/feature"
@@ -69,7 +69,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/variableSetting/variableValue1",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName1"),
+												Variable: pointer.String("variableName1"),
 											},
 										},
 									},
@@ -92,7 +92,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/variableSetting/variableValue2",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName2"),
+												Variable: pointer.String("variableName2"),
 											},
 										},
 									},
@@ -157,7 +157,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/cluster-name",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
+												Variable: pointer.String("variableName"),
 											},
 										},
 									},
@@ -211,7 +211,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/kubeadmConfigSpec/clusterConfiguration/controllerManager/extraArgs/cluster-name",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName1"),
+												Variable: pointer.String("variableName1"),
 											},
 										},
 									},
@@ -234,7 +234,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/variableSetting/variableValue",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName2"),
+												Variable: pointer.String("variableName2"),
 											},
 										},
 									},
@@ -283,7 +283,7 @@ func TestValidatePatches(t *testing.T) {
 					Patches: []clusterv1.ClusterClassPatch{
 						{
 							Name:        "patch1",
-							EnabledIf:   ptr.To(`template {{ .variableB }}`),
+							EnabledIf:   pointer.String(`template {{ .variableB }}`),
 							Definitions: []clusterv1.PatchDefinition{},
 						},
 					},
@@ -306,7 +306,7 @@ func TestValidatePatches(t *testing.T) {
 					Patches: []clusterv1.ClusterClassPatch{
 						{
 							Name:      "patch1",
-							EnabledIf: ptr.To(`template {{{{{{{{ .variableB }}`),
+							EnabledIf: pointer.String(`template {{{{{{{{ .variableB }}`),
 						},
 					},
 				},
@@ -428,7 +428,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/0/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
+												Variable: pointer.String("variableName"),
 											},
 										},
 									},
@@ -481,7 +481,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/1/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
+												Variable: pointer.String("variableName"),
 											},
 										},
 									},
@@ -535,7 +535,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/01/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
+												Variable: pointer.String("variableName"),
 											},
 										},
 									},
@@ -589,7 +589,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "remove",
 											Path: "/spec/template/0/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
+												Variable: pointer.String("variableName"),
 											},
 										},
 									},
@@ -643,7 +643,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "replace",
 											Path: "/spec/template/0/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
+												Variable: pointer.String("variableName"),
 											},
 										},
 									},
@@ -739,7 +739,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
+												Variable: pointer.String("variableName"),
 											},
 											Value: &apiextensionsv1.JSON{Raw: []byte("1")},
 										},
@@ -1004,8 +1004,8 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
-												Template: ptr.To(`template {{ .variableB }}`),
+												Variable: pointer.String("variableName"),
+												Template: pointer.String(`template {{ .variableB }}`),
 											},
 										},
 									},
@@ -1059,7 +1059,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Template: ptr.To(`template {{ .variableB }}`),
+												Template: pointer.String(`template {{ .variableB }}`),
 											},
 										},
 									},
@@ -1112,7 +1112,7 @@ func TestValidatePatches(t *testing.T) {
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
 												// Template is invalid - too many leading curly braces.
-												Template: ptr.To(`template {{{{{{{{ .variableB }}`),
+												Template: pointer.String(`template {{{{{{{{ .variableB }}`),
 											},
 										},
 									},
@@ -1166,7 +1166,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("undefinedVariable"),
+												Variable: pointer.String("undefinedVariable"),
 											},
 										},
 									},
@@ -1218,7 +1218,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName"),
+												Variable: pointer.String("variableName"),
 											},
 										},
 									},
@@ -1270,7 +1270,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("variableName.nestedField"),
+												Variable: pointer.String("variableName.nestedField"),
 											},
 										},
 									},
@@ -1327,7 +1327,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("builtin.notDefined"),
+												Variable: pointer.String("builtin.notDefined"),
 											},
 										},
 									},
@@ -1370,7 +1370,7 @@ func TestValidatePatches(t *testing.T) {
 											Op:   "add",
 											Path: "/spec/template/spec/",
 											ValueFrom: &clusterv1.JSONPatchValue{
-												Variable: ptr.To("builtin.machineDeployment.version"),
+												Variable: pointer.String("builtin.machineDeployment.version"),
 											},
 										},
 									},
@@ -1401,8 +1401,8 @@ func TestValidatePatches(t *testing.T) {
 						{
 							Name: "patch1",
 							External: &clusterv1.ExternalPatchDefinition{
-								GenerateExtension: ptr.To("generate-extension"),
-								ValidateExtension: ptr.To("generate-extension"),
+								GenerateExtension: pointer.String("generate-extension"),
+								ValidateExtension: pointer.String("generate-extension"),
 							},
 						},
 					},
@@ -1428,8 +1428,8 @@ func TestValidatePatches(t *testing.T) {
 						{
 							Name: "patch1",
 							External: &clusterv1.ExternalPatchDefinition{
-								GenerateExtension: ptr.To("generate-extension"),
-								ValidateExtension: ptr.To("generate-extension"),
+								GenerateExtension: pointer.String("generate-extension"),
+								ValidateExtension: pointer.String("generate-extension"),
 							},
 						},
 					},
@@ -1479,8 +1479,8 @@ func TestValidatePatches(t *testing.T) {
 						{
 							Name: "patch1",
 							External: &clusterv1.ExternalPatchDefinition{
-								GenerateExtension: ptr.To("generate-extension"),
-								ValidateExtension: ptr.To("generate-extension"),
+								GenerateExtension: pointer.String("generate-extension"),
+								ValidateExtension: pointer.String("generate-extension"),
 							},
 							Definitions: []clusterv1.PatchDefinition{},
 						},

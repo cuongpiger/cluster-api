@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -100,7 +99,10 @@ func (r *InMemoryClusterReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	// Always attempt to Patch the InMemoryCluster object and status after each reconciliation.
 	defer func() {
 		if err := patchHelper.Patch(ctx, inMemoryCluster); err != nil {
-			rerr = kerrors.NewAggregate([]error{rerr, err})
+			log.Error(err, "failed to patch InMemoryCluster")
+			if rerr == nil {
+				rerr = err
+			}
 		}
 	}()
 

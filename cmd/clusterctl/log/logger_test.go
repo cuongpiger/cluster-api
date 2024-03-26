@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 )
 
 func TestFlatten(t *testing.T) {
@@ -115,7 +115,7 @@ func TestLoggerEnabled(t *testing.T) {
 	}{
 		{
 			name:      "Return true when level is set below the threshold",
-			threshold: ptr.To(5),
+			threshold: pointer.Int(5),
 			level:     1,
 			want:      true,
 		},
@@ -126,7 +126,7 @@ func TestLoggerEnabled(t *testing.T) {
 		},
 		{
 			name:      "Return false when level is set above the threshold",
-			threshold: ptr.To(5),
+			threshold: pointer.Int(5),
 			level:     7,
 			want:      false,
 		},

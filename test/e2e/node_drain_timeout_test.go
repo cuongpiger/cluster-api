@@ -21,7 +21,7 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("When testing node drain timeout", func() {
@@ -32,7 +32,7 @@ var _ = Describe("When testing node drain timeout", func() {
 			BootstrapClusterProxy:  bootstrapClusterProxy,
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
-			InfrastructureProvider: ptr.To("docker"),
+			InfrastructureProvider: pointer.String("docker"),
 		}
 	})
 })

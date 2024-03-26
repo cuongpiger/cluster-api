@@ -19,6 +19,7 @@ package cloud
 import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	cbuilder "sigs.k8s.io/cluster-api/test/infrastructure/inmemory/internal/cloud/runtime/builder"
 	cclient "sigs.k8s.io/cluster-api/test/infrastructure/inmemory/internal/cloud/runtime/client"
 	cmanager "sigs.k8s.io/cluster-api/test/infrastructure/inmemory/internal/cloud/runtime/manager"
 )
@@ -36,4 +37,7 @@ type Manager cmanager.Manager
 var (
 	// NewManager returns a new Manager for creating Controllers.
 	NewManager = cmanager.New
+
+	// NewControllerManagedBy returns a new controller builder that will be started by the provided Manager.
+	NewControllerManagedBy = cbuilder.ControllerManagedBy
 )

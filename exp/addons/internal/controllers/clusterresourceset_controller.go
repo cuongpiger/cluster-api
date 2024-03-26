@@ -200,8 +200,8 @@ func (r *ClusterResourceSetReconciler) reconcileDelete(ctx context.Context, clus
 
 		clusterResourceSetBinding.RemoveBinding(crs)
 		clusterResourceSetBinding.OwnerReferences = util.RemoveOwnerRef(clusterResourceSetBinding.GetOwnerReferences(), metav1.OwnerReference{
-			APIVersion: addonsv1.GroupVersion.String(),
-			Kind:       "ClusterResourceSet",
+			APIVersion: crs.APIVersion,
+			Kind:       crs.Kind,
 			Name:       crs.Name,
 		})
 
@@ -212,6 +212,7 @@ func (r *ClusterResourceSetReconciler) reconcileDelete(ctx context.Context, clus
 				log.Error(err, "failed to delete empty ClusterResourceSetBinding")
 			}
 		} else if err := patchHelper.Patch(ctx, clusterResourceSetBinding); err != nil {
+			log.Error(err, "failed to patch ClusterResourceSetBinding")
 			return err
 		}
 	}
@@ -296,7 +297,7 @@ func (r *ClusterResourceSetReconciler) ApplyClusterResourceSet(ctx context.Conte
 	// Ensure that the owner references are set on the ClusterResourceSetBinding.
 	clusterResourceSetBinding.SetOwnerReferences(util.EnsureOwnerRef(clusterResourceSetBinding.GetOwnerReferences(), metav1.OwnerReference{
 		APIVersion: addonsv1.GroupVersion.String(),
-		Kind:       "ClusterResourceSet",
+		Kind:       clusterResourceSet.Kind,
 		Name:       clusterResourceSet.Name,
 		UID:        clusterResourceSet.UID,
 	}))

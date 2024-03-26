@@ -20,39 +20,38 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/blang/semver/v4"
 	. "github.com/onsi/gomega"
-
-	goproxytest "sigs.k8s.io/cluster-api/internal/goproxy/test"
 )
 
 func TestClient_GetVersions(t *testing.T) {
 	retryableOperationInterval = 200 * time.Millisecond
 	retryableOperationTimeout = 1 * time.Second
 
-	scheme, host, muxGoproxy, teardownGoproxy := goproxytest.NewFakeGoproxy()
-	clientGoproxy := NewClient(scheme, host)
+	clientGoproxy, muxGoproxy, teardownGoproxy := NewFakeGoproxy()
 	defer teardownGoproxy()
 
 	// setup an handler for returning 2 fake releases
 	muxGoproxy.HandleFunc("/github.com/o/r1/@v/list", func(w http.ResponseWriter, r *http.Request) {
-		goproxytest.HTTPTestMethod(t, r, "GET")
+		testMethod(t, r, "GET")
 		fmt.Fprint(w, "v1.1.0\n")
 		fmt.Fprint(w, "v0.2.0\n")
 	})
 
 	// setup an handler for returning 2 fake releases for v1
 	muxGoproxy.HandleFunc("/github.com/o/r2/@v/list", func(w http.ResponseWriter, r *http.Request) {
-		goproxytest.HTTPTestMethod(t, r, "GET")
+		testMethod(t, r, "GET")
 		fmt.Fprint(w, "v1.1.0\n")
 		fmt.Fprint(w, "v0.2.0\n")
 	})
 	// setup an handler for returning 2 fake releases for v2
 	muxGoproxy.HandleFunc("/github.com/o/r2/v2/@v/list", func(w http.ResponseWriter, r *http.Request) {
-		goproxytest.HTTPTestMethod(t, r, "GET")
+		testMethod(t, r, "GET")
 		fmt.Fprint(w, "v2.0.1\n")
 		fmt.Fprint(w, "v2.0.0\n")
 	})
@@ -181,5 +180,31 @@ func Test_GetGoproxyHost(t *testing.T) {
 			g.Expect(gotScheme).To(Equal(tt.wantScheme))
 			g.Expect(gotHost).To(Equal(tt.wantHost))
 		})
+	}
+}
+
+// NewFakeGoproxy sets up a test HTTP server along with a github.Client that is
+// configured to talk to that test server. Tests should register handlers on
+// mux which provide mock responses for the API method being tested.
+func NewFakeGoproxy() (client *Client, mux *http.ServeMux, teardown func()) {
+	// mux is the HTTP request multiplexer used with the test server.
+	mux = http.NewServeMux()
+
+	apiHandler := http.NewServeMux()
+	apiHandler.Handle("/", mux)
+
+	// server is a test HTTP server used to provide mock API responses.
+	server := httptest.NewServer(apiHandler)
+
+	// client is the GitHub client being tested and is configured to use test server.
+	url, _ := url.Parse(server.URL + "/")
+	return NewClient(url.Scheme, url.Host), mux, server.Close
+}
+
+func testMethod(t *testing.T, r *http.Request, want string) {
+	t.Helper()
+
+	if got := r.Method; got != want {
+		t.Errorf("Request method: %v, want %v", got, want)
 	}
 }

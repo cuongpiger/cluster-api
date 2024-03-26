@@ -35,12 +35,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/api/v1beta1/index"
@@ -1230,7 +1229,7 @@ func TestMachineHealthCheck_Reconcile(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSetSpec{
 				ClusterName: cluster.Name,
-				Replicas:    ptr.To[int32](1),
+				Replicas:    pointer.Int32(1),
 				Selector:    mhc.Spec.Selector,
 				Template: clusterv1.MachineTemplateSpec{
 					ObjectMeta: clusterv1.ObjectMeta{
@@ -1239,7 +1238,7 @@ func TestMachineHealthCheck_Reconcile(t *testing.T) {
 					Spec: clusterv1.MachineSpec{
 						ClusterName: cluster.Name,
 						Bootstrap: clusterv1.Bootstrap{
-							DataSecretName: ptr.To("test-data-secret-name"),
+							DataSecretName: pointer.String("test-data-secret-name"),
 						},
 						InfrastructureRef: corev1.ObjectReference{
 							APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
@@ -1250,9 +1249,7 @@ func TestMachineHealthCheck_Reconcile(t *testing.T) {
 				},
 			},
 		}
-
-		reqCtx := admission.NewContextWithRequest(ctx, admission.Request{})
-		g.Expect((&webhooks.MachineSet{}).Default(reqCtx, machineSet)).Should(Succeed())
+		g.Expect((&webhooks.MachineSet{}).Default(ctx, machineSet)).Should(Succeed())
 		g.Expect(env.Create(ctx, machineSet)).To(Succeed())
 
 		// Ensure machines have been created.
@@ -2313,7 +2310,7 @@ func newRunningMachine(c *clusterv1.Cluster, labels map[string]string) *clusterv
 		Spec: clusterv1.MachineSpec{
 			ClusterName: c.Name,
 			Bootstrap: clusterv1.Bootstrap{
-				DataSecretName: ptr.To("data-secret-name"),
+				DataSecretName: pointer.String("data-secret-name"),
 			},
 		},
 		Status: clusterv1.MachineStatus{
@@ -2496,7 +2493,7 @@ func createMachinesWithNodes(
 			machine.Status.FailureReason = &failureReason
 		}
 		if o.failureMessage != "" {
-			machine.Status.FailureMessage = ptr.To(o.failureMessage)
+			machine.Status.FailureMessage = pointer.String(o.failureMessage)
 		}
 
 		// Adding one second to ensure there is a difference from the
@@ -2607,8 +2604,7 @@ func TestPatchTargets(t *testing.T) {
 	// To make the patch fail, create patchHelper with a different client.
 	fakeMachine := machine1.DeepCopy()
 	fakeMachine.Name = "fake"
-	patchHelper, err := patch.NewHelper(fakeMachine, fake.NewClientBuilder().WithObjects(fakeMachine).Build())
-	g.Expect(err).ToNot(HaveOccurred())
+	patchHelper, _ := patch.NewHelper(fakeMachine, fake.NewClientBuilder().WithObjects(fakeMachine).Build())
 	// healthCheckTarget with fake patchHelper, patch should fail on this target.
 	target1 := healthCheckTarget{
 		MHC:         mhc,
@@ -2618,8 +2614,7 @@ func TestPatchTargets(t *testing.T) {
 	}
 
 	// healthCheckTarget with correct patchHelper.
-	patchHelper2, err := patch.NewHelper(machine2, cl)
-	g.Expect(err).ToNot(HaveOccurred())
+	patchHelper2, _ := patch.NewHelper(machine2, cl)
 	target3 := healthCheckTarget{
 		MHC:         mhc,
 		Machine:     machine2,

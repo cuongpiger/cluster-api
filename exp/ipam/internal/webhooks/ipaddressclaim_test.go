@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 
 	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
 )
@@ -34,7 +34,7 @@ func TestIPAddressClaimValidateCreate(t *testing.T) {
 				PoolRef: corev1.TypedLocalObjectReference{
 					Name:     "identical",
 					Kind:     "TestPool",
-					APIGroup: ptr.To("ipam.cluster.x-k8s.io"),
+					APIGroup: pointer.String("ipam.cluster.x-k8s.io"),
 				},
 			},
 		}

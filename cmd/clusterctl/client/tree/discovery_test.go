@@ -841,7 +841,7 @@ func Test_Discovery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			client, err := test.NewFakeProxy().WithObjs(tt.args.objs...).NewClient(context.Background())
+			client, err := test.NewFakeProxy().WithObjs(tt.args.objs...).NewClient()
 			g.Expect(client).ToNot(BeNil())
 			g.Expect(err).ToNot(HaveOccurred())
 

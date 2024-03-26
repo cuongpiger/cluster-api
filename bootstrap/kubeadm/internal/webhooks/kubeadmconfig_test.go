@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
@@ -44,7 +44,7 @@ func TestKubeadmConfigDefault(t *testing.T) {
 		Spec: bootstrapv1.KubeadmConfigSpec{},
 	}
 	updateDefaultingKubeadmConfig := kubeadmConfig.DeepCopy()
-	updateDefaultingKubeadmConfig.Spec.Verbosity = ptr.To[int32](4)
+	updateDefaultingKubeadmConfig.Spec.Verbosity = pointer.Int32(4)
 	webhook := &KubeadmConfig{}
 	t.Run("for KubeadmConfig", util.CustomDefaultValidateTest(ctx, updateDefaultingKubeadmConfig, webhook))
 
@@ -192,7 +192,7 @@ func TestKubeadmConfigValidate(t *testing.T) {
 				Spec: bootstrapv1.KubeadmConfigSpec{
 					Users: []bootstrapv1.User{
 						{
-							Passwd: ptr.To("foo"),
+							Passwd: pointer.String("foo"),
 						},
 					},
 				},
@@ -228,7 +228,7 @@ func TestKubeadmConfigValidate(t *testing.T) {
 					Users: []bootstrapv1.User{
 						{
 							PasswdFrom: &bootstrapv1.PasswdSource{},
-							Passwd:     ptr.To("foo"),
+							Passwd:     pointer.String("foo"),
 						},
 					},
 				},
@@ -249,7 +249,7 @@ func TestKubeadmConfigValidate(t *testing.T) {
 									Key: "bar",
 								},
 							},
-							Passwd: ptr.To("foo"),
+							Passwd: pointer.String("foo"),
 						},
 					},
 				},
@@ -270,7 +270,7 @@ func TestKubeadmConfigValidate(t *testing.T) {
 									Name: "foo",
 								},
 							},
-							Passwd: ptr.To("foo"),
+							Passwd: pointer.String("foo"),
 						},
 					},
 				},
@@ -313,7 +313,7 @@ func TestKubeadmConfigValidate(t *testing.T) {
 					Format: bootstrapv1.Ignition,
 					Users: []bootstrapv1.User{
 						{
-							Inactive: ptr.To(true),
+							Inactive: pointer.Bool(true),
 						},
 					},
 				},
@@ -332,7 +332,7 @@ func TestKubeadmConfigValidate(t *testing.T) {
 					DiskSetup: &bootstrapv1.DiskSetup{
 						Partitions: []bootstrapv1.Partition{
 							{
-								TableType: ptr.To("MS-DOS"),
+								TableType: pointer.String("MS-DOS"),
 							},
 						},
 					},
@@ -393,7 +393,7 @@ func TestKubeadmConfigValidate(t *testing.T) {
 					DiskSetup: &bootstrapv1.DiskSetup{
 						Filesystems: []bootstrapv1.Filesystem{
 							{
-								ReplaceFS: ptr.To("ntfs"),
+								ReplaceFS: pointer.String("ntfs"),
 							},
 						},
 					},
@@ -413,7 +413,7 @@ func TestKubeadmConfigValidate(t *testing.T) {
 					DiskSetup: &bootstrapv1.DiskSetup{
 						Filesystems: []bootstrapv1.Filesystem{
 							{
-								Partition: ptr.To("1"),
+								Partition: pointer.String("1"),
 							},
 						},
 					},

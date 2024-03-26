@@ -21,7 +21,7 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("When using the autoscaler with Cluster API using ClusterClass [ClusterClass]", func() {
@@ -32,9 +32,9 @@ var _ = Describe("When using the autoscaler with Cluster API using ClusterClass 
 			BootstrapClusterProxy:             bootstrapClusterProxy,
 			ArtifactFolder:                    artifactFolder,
 			SkipCleanup:                       skipCleanup,
-			InfrastructureProvider:            ptr.To("docker"),
+			InfrastructureProvider:            pointer.String("docker"),
 			InfrastructureMachineTemplateKind: "dockermachinetemplates",
-			Flavor:                            ptr.To("topology-autoscaler"),
+			Flavor:                            pointer.String("topology-autoscaler"),
 			AutoscalerVersion:                 "v1.29.0",
 		}
 	})

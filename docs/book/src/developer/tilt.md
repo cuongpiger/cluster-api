@@ -8,14 +8,14 @@ workflow that offers easy deployments and rapid iterative builds.
 ## Prerequisites
 
 1. [Docker](https://docs.docker.com/install/): v19.03 or newer
-2. [kind](https://kind.sigs.k8s.io): v0.20.0 or newer
-3. [Tilt](https://docs.tilt.dev/install.html): v0.30.8 or newer
-4. [kustomize](https://github.com/kubernetes-sigs/kustomize): provided via `make kustomize`
-5. [envsubst](https://github.com/drone/envsubst): provided via `make envsubst`
-6. [helm](https://github.com/helm/helm): v3.7.1 or newer
-7. Clone the [Cluster API](https://github.com/kubernetes-sigs/cluster-api) repository
+1. [kind](https://kind.sigs.k8s.io): v0.20.0 or newer
+1. [Tilt](https://docs.tilt.dev/install.html): v0.30.8 or newer
+1. [kustomize](https://github.com/kubernetes-sigs/kustomize): provided via `make kustomize`
+1. [envsubst](https://github.com/drone/envsubst): provided via `make envsubst`
+1. [helm](https://github.com/helm/helm): v3.7.1 or newer
+1. Clone the [Cluster API](https://github.com/kubernetes-sigs/cluster-api) repository
    locally
-8. Clone the provider(s) you want to deploy locally as well
+1. Clone the provider(s) you want to deploy locally as well
 
 ## Getting started
 
@@ -429,13 +429,7 @@ COPY --from=tilt-helper /usr/bin/docker /usr/bin/docker
 COPY --from=tilt-helper /go/kubernetes/client/bin/kubectl /usr/bin/kubectl
 ```
 
-**kustomize_folder** (String, default=config/default): The folder where the kustomize file for a provider
-is defined; the path is relative to the provider root folder.
-
-**kustomize_options** ([]String, default=[]): Options to be applied when running kustomize for generating the
-yaml manifest for a provider. e.g. `"kustomize_options": [ "--load-restrictor=LoadRestrictionsNone" ]`
-
-**apply_provider_yaml** (Bool, default=true): Whether to apply the provider yaml.
+**kustomize_config** (Bool, default=true): Whether or not running kustomize on the ./config folder of the provider.
 Set to `false` if your provider does not have a ./config folder or you do not want it to be applied in the cluster.
 
 **go_main** (String, default="main.go"): The go main file if not located at the root of the folder

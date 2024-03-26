@@ -79,16 +79,16 @@ func (r *Reconciler) reconcileNode(ctx context.Context, s *scope) (ctrl.Result, 
 			// No need to requeue here. Nodes emit an event that triggers reconciliation.
 			return ctrl.Result{}, nil
 		}
+		log.Error(err, "Failed to retrieve Node by ProviderID")
 		r.recorder.Event(machine, corev1.EventTypeWarning, "Failed to retrieve Node by ProviderID", err.Error())
-		conditions.MarkUnknown(machine, clusterv1.MachineNodeHealthyCondition, clusterv1.NodeInspectionFailedReason, "Failed to get the Node for this Machine by ProviderID")
 		return ctrl.Result{}, err
 	}
 
 	// Set the Machine NodeRef.
 	if machine.Status.NodeRef == nil {
 		machine.Status.NodeRef = &corev1.ObjectReference{
-			APIVersion: corev1.SchemeGroupVersion.String(),
-			Kind:       "Node",
+			Kind:       node.Kind,
+			APIVersion: node.APIVersion,
 			Name:       node.Name,
 			UID:        node.UID,
 		}
@@ -290,9 +290,7 @@ func (r *Reconciler) patchNode(ctx context.Context, remoteClient client.Client, 
 	annotations.AddAnnotations(newNode, map[string]string{clusterv1.LabelsFromMachineAnnotation: strings.Join(labelsFromCurrentReconcile, ",")})
 
 	// Drop the NodeUninitializedTaint taint on the node given that we are reconciling labels.
-	hasTaintChanges := taints.RemoveNodeTaint(newNode, clusterv1.NodeUninitializedTaint) || taints.RemoveNodeTaint(newNode, clusterv1.CloudProviderUninitializedTaint)
-
-	// Drop the CloudProviderUninitializedTaint taint on the node given that we are reconciling labels.
+	hasTaintChanges := taints.RemoveNodeTaint(newNode, clusterv1.NodeUninitializedTaint)
 
 	if !hasAnnotationChanges && !hasLabelChanges && !hasTaintChanges {
 		return nil

@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -198,7 +197,7 @@ func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// the current cluster because of concurrent access.
 		if errors.Is(err, remote.ErrClusterLocked) {
 			log.V(5).Info("Requeuing because another worker has the lock on the ClusterCacheTracker")
-			return ctrl.Result{RequeueAfter: time.Minute}, nil
+			return ctrl.Result{Requeue: true}, nil
 		}
 		return ctrl.Result{}, err
 	}
@@ -216,7 +215,7 @@ func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// the current cluster because of concurrent access.
 	if errors.Is(err, remote.ErrClusterLocked) {
 		log.V(5).Info("Requeuing because another worker has the lock on the ClusterCacheTracker")
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 	return res, err
 }
@@ -225,7 +224,7 @@ func (r *MachinePoolReconciler) reconcile(ctx context.Context, cluster *clusterv
 	// Ensure the MachinePool is owned by the Cluster it belongs to.
 	mp.SetOwnerReferences(util.EnsureOwnerRef(mp.GetOwnerReferences(), metav1.OwnerReference{
 		APIVersion: clusterv1.GroupVersion.String(),
-		Kind:       "Cluster",
+		Kind:       cluster.Kind,
 		Name:       cluster.Name,
 		UID:        cluster.UID,
 	}))

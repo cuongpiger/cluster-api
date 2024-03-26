@@ -21,7 +21,7 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("When testing ClusterClass rollouts [ClusterClass]", func() {
@@ -33,7 +33,7 @@ var _ = Describe("When testing ClusterClass rollouts [ClusterClass]", func() {
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
 			Flavor:                 "topology",
-			InfrastructureProvider: ptr.To("docker"),
+			InfrastructureProvider: pointer.String("docker"),
 		}
 	})
 })
