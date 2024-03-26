@@ -224,7 +224,8 @@ func (r *MachinePoolReconciler) patchNodes(ctx context.Context, c client.Client,
 		}
 		// Add annotations and drop NodeUninitializedTaint.
 		hasAnnotationChanges := annotations.AddAnnotations(node, desired)
-		hasTaintChanges := taints.RemoveNodeTaint(node, clusterv1.NodeUninitializedTaint)
+		hasTaintChanges := taints.RemoveNodeTaint(node, clusterv1.NodeUninitializedTaint) || taints.RemoveNodeTaint(node, clusterv1.NodeCloudProviderUninitialized)
+
 		// Patch the node if needed.
 		if hasAnnotationChanges || hasTaintChanges {
 			if err := patchHelper.Patch(ctx, node); err != nil {
