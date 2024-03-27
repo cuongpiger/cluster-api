@@ -65,3 +65,17 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [Help wanted]: https://github.com/kubernetes-sigs/cluster-api/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22+
 
 <!-- ANCHOR_END: Community -->
+
+
+<hr>
+
+
+# Build
+# Build core
+```bash
+make docker-build-core
+```
+
+# Images
+- Stable: `vcr.vngcloud.vn/81-vks-public/cluster-api-controller:v1.6.2`
+- Dev: `vcr.vngcloud.vn/60108-cuongdm3/cluster-api-controller:v1.6.2.1`
