@@ -229,10 +229,17 @@ const (
 // This taint is used to prevent workloads to be scheduled on Nodes before the node is initialized by Cluster API.
 // As of today the Node initialization consists of syncing labels from Machines to Nodes. Once the labels
 // have been initially synced the taint is removed from the Node.
-var NodeUninitializedTaint = corev1.Taint{
-	Key:    "node.cluster.x-k8s.io/uninitialized",
-	Effect: corev1.TaintEffectNoSchedule,
-}
+var (
+	NodeUninitializedTaint = corev1.Taint{
+		Key:    "node.cluster.x-k8s.io/uninitialized",
+		Effect: corev1.TaintEffectNoSchedule,
+	}
+
+	NodeCloudProviderUninitializedTaint = corev1.Taint{
+		Key:    "node.cloudprovider.kubernetes.io/uninitialized",
+		Effect: corev1.TaintEffectNoSchedule,
+	}
+)
 
 const (
 	// TemplateSuffix is the object kind suffix used by template types.
