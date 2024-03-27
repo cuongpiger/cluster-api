@@ -634,7 +634,6 @@ func (r *Reconciler) drainNode(ctx context.Context, cluster *clusterv1.Cluster, 
 		Ctx:                 ctx,
 		Force:               true,
 		IgnoreAllDaemonSets: true,
-		DisableEviction:     true,
 		DeleteEmptyDirData:  true,
 		GracePeriodSeconds:  -1,
 		// If a pod is not evicted in 20 seconds, retry the eviction next time the

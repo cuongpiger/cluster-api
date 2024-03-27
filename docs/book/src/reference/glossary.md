@@ -66,9 +66,6 @@ Cluster API Google Cloud Provider
 ### CAPH
 Cluster API Provider Hetzner
 
-### CAPHV
-Cluster API Provider Hivelocity
-
 ### CAPIBM
 Cluster API Provider IBM Cloud
 
