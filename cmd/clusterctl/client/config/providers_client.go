@@ -53,6 +53,7 @@ const (
 	NutanixProviderName        = "nutanix"
 	OCIProviderName            = "oci"
 	OpenStackProviderName      = "openstack"
+	VngCloudProviderName       = "vngcloud"
 	PacketProviderName         = "packet"
 	SideroProviderName         = "sidero"
 	VCloudDirectorProviderName = "vcd"
@@ -197,6 +198,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         OpenStackProviderName,
 			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-openstack/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         VngCloudProviderName,
+			url:          "https://github.com/cuongpiger/cluster-api-provider-vngcloud-manifest/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
@@ -356,6 +362,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         KamajiControlPlaneProviderName,
 			url:          "https://github.com/clastix/cluster-api-control-plane-provider-kamaji/releases/latest/control-plane-components.yaml",
+			providerType: clusterctlv1.ControlPlaneProviderType,
+		},
+		&provider{
+			name:         VngCloudProviderName,
+			url:          "https://github.com/cuongpiger/cluster-api-provider-vngcloud-manifest/releases/latest/control-plane-components.yaml",
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 		&provider{
