@@ -386,6 +386,11 @@ func (p *providersClient) defaults() []Provider {
 			url:          "https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/latest/addon-components.yaml",
 			providerType: clusterctlv1.AddonProviderType,
 		},
+		&provider{
+			name:         VngCloudProviderName,
+			url:          "https://github.com/cuongpiger/cluster-api-provider-vngcloud-manifest/releases/latest/addon-components.yaml",
+			providerType: clusterctlv1.AddonProviderType,
+		},
 	}
 
 	return defaults
