@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-      - image: gcr.io/k8s-staging-cluster-api/capim-manager:main
+      - image: docker.io/manhcuong8499/capim-manager-amd64:dev
         name: manager

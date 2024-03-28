@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-      - image: gcr.io/k8s-staging-cluster-api/test-extension:main
+      - image: docker.io/manhcuong8499/test-extension-amd64:dev
         name: manager
