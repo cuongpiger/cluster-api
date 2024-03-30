@@ -69,3 +69,8 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 <hr>
 
 - Dev: `vcr.vngcloud.vn/60108-cuongdm3/cluster-api-controller:v1.6.3`
+
+# Build the image:
+  ```bash
+  make docker-build-core
+  ```

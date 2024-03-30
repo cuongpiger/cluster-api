@@ -37,6 +37,30 @@ func RemoveNodeTaint(node *corev1.Node, drop corev1.Taint) bool {
 	return droppedTaint
 }
 
+// RemoveNodeTaints drops the taints from the list of node taints.
+// It returns true if the taints are modified, false otherwise.
+func RemoveNodeTaints(node *corev1.Node, drops ...corev1.Taint) bool {
+	droppedTaint := false
+
+	taintMap := make(map[corev1.Taint]corev1.Taint)
+	for _, taint := range drops {
+		taintMap[taint] = taint
+	}
+
+	taints := []corev1.Taint{}
+	for _, taint := range node.Spec.Taints {
+		rmTaint, ok := taintMap[taint]
+		if ok && taint.MatchTaint(&rmTaint) {
+			droppedTaint = true
+			continue
+		}
+
+		taints = append(taints, taint)
+	}
+	node.Spec.Taints = taints
+	return droppedTaint
+}
+
 // HasTaint returns true if the targetTaint is in the list of taints.
 func HasTaint(taints []corev1.Taint, targetTaint corev1.Taint) bool {
 	for _, taint := range taints {
