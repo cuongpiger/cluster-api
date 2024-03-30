@@ -42,14 +42,14 @@ func RemoveNodeTaint(node *corev1.Node, drop corev1.Taint) bool {
 func RemoveNodeTaints(node *corev1.Node, drops ...corev1.Taint) bool {
 	droppedTaint := false
 
-	taintMap := make(map[corev1.Taint]corev1.Taint)
+	taintMap := make(map[taintKey]corev1.Taint)
 	for _, taint := range drops {
-		taintMap[taint] = taint
+		taintMap[taintKey{key: taint.Key, effect: taint.Effect}] = taint
 	}
 
 	taints := []corev1.Taint{}
 	for _, taint := range node.Spec.Taints {
-		rmTaint, ok := taintMap[taint]
+		rmTaint, ok := taintMap[taintKey{key: taint.Key, effect: taint.Effect}]
 		if ok && taint.MatchTaint(&rmTaint) {
 			droppedTaint = true
 			continue
@@ -69,4 +69,9 @@ func HasTaint(taints []corev1.Taint, targetTaint corev1.Taint) bool {
 		}
 	}
 	return false
+}
+
+type taintKey struct {
+	key    string
+	effect corev1.TaintEffect
 }
